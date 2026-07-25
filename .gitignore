@@ -1,26 +1,6 @@
 # Third-party repositories
 CAT-Net/
 lightshade-artifact/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# Virtual environments
-venv/
-catnet_env/
-lightshed_env/
-
-# Results
-results/
-
-# VS Code
-.vscode/
-
-# OS
-.DS_Store
-Thumbs.db
 lightshade-artifact/.ipynb_checkpoints/README-checkpoint.md
 lightshade-artifact/.ipynb_checkpoints/requirements-checkpoint.txt
 lightshade-artifact/checkpoints/checkpointautoencoderAllRobustNewGlazeMistMetacloak_epoch_269.pth
@@ -67,3 +47,24 @@ lightshade-artifact/data_checkpoints/splits/.ipynb_checkpoints/binary_test_indic
 lightshade-artifact/data_checkpoints/splits/binary_test_indices.txt
 lightshade-artifact/data_checkpoints/splits/binary_validation_indices.txt
 lightshade-artifact/README.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+catnet_env/
+lightshed_env/
+
+# Results
+results/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
