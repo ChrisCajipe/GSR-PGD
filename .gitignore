@@ -48,6 +48,8 @@ lightshade-artifact/data_checkpoints/splits/binary_test_indices.txt
 lightshade-artifact/data_checkpoints/splits/binary_validation_indices.txt
 lightshade-artifact/README.md
 
+TruFor-main/
+
 # Python
 __pycache__/
 *.pyc
