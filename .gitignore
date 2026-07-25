@@ -1,0 +1,69 @@
+# Third-party repositories
+CAT-Net/
+lightshade-artifact/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+catnet_env/
+lightshed_env/
+
+# Results
+results/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+lightshade-artifact/.ipynb_checkpoints/README-checkpoint.md
+lightshade-artifact/.ipynb_checkpoints/requirements-checkpoint.txt
+lightshade-artifact/checkpoints/checkpointautoencoderAllRobustNewGlazeMistMetacloak_epoch_269.pth
+lightshade-artifact/checkpoints/checkpointAutoEncoderOnlyNightshade_epoch_249.pth
+lightshade-artifact/data_checkpoints/.ipynb_checkpoints/entropy_thresholds-checkpoint.txt
+lightshade-artifact/data_checkpoints/entropy_thresholds.txt
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_Binary.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_Clean.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_Glaze.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_Linf004.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_LPIPS0004.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_LPIPS007.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_Metacloak.npy
+lightshade-artifact/data_checkpoints/gen_entropies_ep270_Mist.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_Binary.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_Clean.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_Glaze.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_Linf004.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_LPIPS0004.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_LPIPS007.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_Metacloak.npy
+lightshade-artifact/data_checkpoints/gen_test_labels_ep270_Mist.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_Binary.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_Clean.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_Glaze.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_Linf004.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_LPIPS0004.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_LPIPS007.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_Metacloak.npy
+lightshade-artifact/data_checkpoints/real_entropies_ep270_Mist.npy
+lightshade-artifact/data_checkpoints/results/.ipynb_checkpoints/detection_analytics_binary_20250121_183714-checkpoint.csv
+lightshade-artifact/data_checkpoints/results/.ipynb_checkpoints/detection_analytics_mist_20250121_183714-checkpoint.csv
+lightshade-artifact/data_checkpoints/results/.ipynb_checkpoints/detection_statistics_20250121_183714-checkpoint.txt
+lightshade-artifact/data_checkpoints/results/detection_analytics_binary_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_clean_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_glaze_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_linf_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_lpips0004_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_lpips007_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_metacloak_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_analytics_mist_20250121_183714.csv
+lightshade-artifact/data_checkpoints/results/detection_statistics_20250121_183714.txt
+lightshade-artifact/data_checkpoints/splits/.ipynb_checkpoints/binary_test_indices-checkpoint.txt
+lightshade-artifact/data_checkpoints/splits/binary_test_indices.txt
+lightshade-artifact/data_checkpoints/splits/binary_validation_indices.txt
+lightshade-artifact/README.md
