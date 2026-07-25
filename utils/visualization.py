@@ -1,6 +1,7 @@
 import torch
 from torchvision.transforms import ToPILImage
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 to_pil = ToPILImage()
 
@@ -9,6 +10,13 @@ def save_image(image, filename):
     """
     Save a tensor image in [0,1] as PNG.
     """
+
+    filename = Path(filename)
+
+    filename.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
     image = image.detach().cpu().clamp(0, 1)
 

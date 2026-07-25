@@ -3,7 +3,7 @@ from pathlib import Path
 # ==========================
 # MODE OF EXPERIMENTATION
 # ==========================
-MODE = "evaluate"
+MODE = "full"
 # Options:
 # "attack"   = generate adversarial images only
 # "evaluate" = evaluate existing adversarial images only
@@ -12,17 +12,23 @@ MODE = "evaluate"
 # ==========================
 # EVALUATION
 # ==========================
-EVALUATION = ""
+EVALUATION = "tampered"
 # Options
 # "untampered" = all clean images
 # "tampered" = all config-based attack tampered images 
 # "50-50" = 50:50 config-based attack tampered images to clean images
 
+# ==========================
+# Attack
+# ==========================
+ATTACK = "gsr"
+# "pgd" or "gsr"
+
 
 # ==========================
 # Dataset
 # ==========================
-MAX_IMAGES = 100
+MAX_IMAGES = 5
 IMAGE_SIZE = (512, 512)
 
 # ==========================
@@ -30,26 +36,19 @@ IMAGE_SIZE = (512, 512)
 # ==========================
 PERSIAN_CAT = 283
 
-
-# ==========================
-# Attack
-# ==========================
-ATTACK = "gsr"   # "pgd" or "gsr"
-
-
 # ==========================
 # PGD
 # ==========================
-EPSILON = 8 / 255
-ALPHA = 2 / 255
+EPSILON = 16 / 255      # PERTURBATION SIZE
+ALPHA = 2.55/255        # STEP SIZE
 MAX_ITERATIONS = 10
 
 
 # ==========================
 # GSR
 # ==========================
-SIGMA = 0.05
-LAMBDA = 0.1
+SIGMA = 0.05            # VARIANCE (STRENGTH OF GSR)
+LAMBDA = 0.1            # WEIGHT OF GSR
 
 
 # ==========================
@@ -62,20 +61,48 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 # Results Directory
 # ==========================
 
-RESULTS_DIR = (
-    PROJECT_ROOT
-    / "results"
-    / f"{ATTACK}-results"
+RESULTS_ROOT = PROJECT_ROOT / "results"
+
+
+# permanent dataset
+ORIGINAL_DIR = RESULTS_ROOT / "original"
+
+
+# generated attacks
+ATTACK_DIR = (
+    RESULTS_ROOT
+    / "attacks"
+    / ATTACK
 )
 
-ORIGINAL_DIR = RESULTS_DIR / "original"
+ADV_DIR = ATTACK_DIR / "adversarial"
 
-ADV_DIR = RESULTS_DIR / "adversarial"
 
-LIGHTSHED_DIR = RESULTS_DIR / "lightshed_results"
+# evaluation outputs
+EVALUATION_DIR = (
+    RESULTS_ROOT
+    / "evaluations"
+    / ATTACK
+    / EVALUATION
+)
 
-TRUFOR_DIR = RESULTS_DIR / "trufor-results"
 
+LIGHTSHED_DIR = (
+    EVALUATION_DIR
+    / "lightshed"
+)
+
+
+TRUFOR_DIR = (
+    EVALUATION_DIR
+    / "trufor"
+)
+
+
+MIXED_DIR = (
+    EVALUATION_DIR
+    / "mixed"
+)
 
 
 # ==========================

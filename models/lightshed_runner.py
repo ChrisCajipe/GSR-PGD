@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 import sys
 import pandas as pd
+import shutil
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -17,6 +18,10 @@ def run_lightshed(input_folder, output_folder, batch_size=8):
 
     input_folder = Path(input_folder).resolve()
     output_folder = Path(output_folder).resolve()
+
+    # clear old results
+    if output_folder.exists():
+        shutil.rmtree(output_folder)
 
     output_folder.mkdir(
         parents=True,
@@ -36,7 +41,7 @@ def run_lightshed(input_folder, output_folder, batch_size=8):
         str(batch_size)
     ]
 
-    print("\nRunning LightShed...")
+    print("\n𝗥𝘂𝗻𝗻𝗶𝗻𝗴 𝗟𝗶𝗴𝗵𝘁𝗦𝗵𝗲𝗱...")
     print("Input :", input_folder)
     print("Output:", output_folder)
 
@@ -50,7 +55,11 @@ def run_lightshed(input_folder, output_folder, batch_size=8):
 
 
 
-def summarize_lightshed(output_folder, display=True):
+def summarize_lightshed(
+    output_folder,
+    labels=None,
+    display=True
+):
     """
     Read LightShed CSV output and print detection statistics.
     """
@@ -68,12 +77,7 @@ def summarize_lightshed(output_folder, display=True):
         return None
 
 
-    latest_csv = max(
-        csv_files,
-        key=lambda x: x.stat().st_mtime
-    )
-
-
+    latest_csv = max(csv_files, key=lambda x: x.stat().st_mtime)
     df = pd.read_csv(latest_csv)
 
 
@@ -86,27 +90,28 @@ def summarize_lightshed(output_folder, display=True):
 
 
     total_images = len(df)
-
-    detected = int(
-        df["is_poisoned"].sum()
-    )
+    detected = int(df["is_poisoned"].sum())
 
     missed = total_images - detected
 
+    df = df.sort_values("filename")
 
-    return {
+    predictions = (
+        df["is_poisoned"]
+        .astype(int)
+        .tolist()
+    )
+
+
+    results = {
         "csv": latest_csv,
         "total": total_images,
         "detected": detected,
         "missed": missed,
-        "detection_rate": (
-            detected / total_images
-            if total_images > 0
-            else 0
-        ),
-        "evasion_rate": (
-            missed / total_images
-            if total_images > 0
-            else 0
-        )
+
+        # raw predictions
+        "predictions": predictions
     }
+
+
+    return results

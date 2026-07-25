@@ -1,6 +1,14 @@
 import torch
 from torchvision.models import resnet50, ResNet50_Weights
-from utils.preprocessing import normalize_image
+from utils.preprocessing import preprocess_image, normalize_image
+from pathlib import Path
+from PIL import Image
+from config import (
+    ADV_DIR,
+    PERSIAN_CAT
+)
+
+
 
 weights = ResNet50_Weights.IMAGENET1K_V2
 categories = weights.meta["categories"]
@@ -24,3 +32,31 @@ def predict_image(model, image):    # Predicts the ImageNet class of one preproc
     prediction_name = categories[prediction_id]
 
     return prediction_id, prediction_name
+
+def evaluate_resnet():
+    print("\nRunning ResNet-50 evaluation...")
+
+    model = load_resnet()
+    adv_images = list(ADV_DIR.glob("*.png"))
+
+    total = 0
+    successful = 0
+
+    for image_path in adv_images:
+
+        image = preprocess_image(Image.open(image_path))
+        prediction_id, _ = predict_image(model,image)
+        total += 1
+
+        if prediction_id == PERSIAN_CAT:
+            successful += 1
+
+    return {
+        "images": total,
+        "successful": successful,
+        "failed": total - successful,
+        "asr":
+            successful / total
+            if total > 0
+            else 0
+    }
