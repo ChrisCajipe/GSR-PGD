@@ -1,11 +1,29 @@
 from pathlib import Path
 
 # ==========================
+# MODE OF EXPERIMENTATION
+# ==========================
+MODE = "evaluate"
+# Options:
+# "attack"   = generate adversarial images only
+# "evaluate" = evaluate existing adversarial images only
+# "full"     = generate + evaluate
+
+# ==========================
+# EVALUATION
+# ==========================
+EVALUATION = ""
+# Options
+# "untampered" = all clean images
+# "tampered" = all config-based attack tampered images 
+# "50-50" = 50:50 config-based attack tampered images to clean images
+
+
+# ==========================
 # Dataset
 # ==========================
 MAX_IMAGES = 100
 IMAGE_SIZE = (512, 512)
-
 
 # ==========================
 # Target Class
@@ -16,7 +34,7 @@ PERSIAN_CAT = 283
 # ==========================
 # Attack
 # ==========================
-ATTACK = "pgd"   # "pgd" or "gsr"
+ATTACK = "gsr"   # "pgd" or "gsr"
 
 
 # ==========================
@@ -56,6 +74,8 @@ ADV_DIR = RESULTS_DIR / "adversarial"
 
 LIGHTSHED_DIR = RESULTS_DIR / "lightshed_results"
 
+TRUFOR_DIR = RESULTS_DIR / "trufor-results"
+
 
 
 # ==========================
@@ -86,13 +106,18 @@ CHECKPOINT = (
 
 TRUFOR_ROOT = (
     PROJECT_ROOT
-    / "trufor"
+    / "TruFor-main"
+)
+
+TRUFOR_TEST = (
+    TRUFOR_ROOT
     / "TruFor_train_test"
+    / "test.py"
 )
 
 TRUFOR_CHECKPOINT = (
     TRUFOR_ROOT
-    / "weights"
-    / "trufor_ph3"
-    / "best.pth.tar"
+    / "TruFor_train_test"
+    / "pretrained_models"
+    / "trufor.pth.tar"
 )
