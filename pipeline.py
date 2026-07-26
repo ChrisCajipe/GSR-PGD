@@ -25,7 +25,7 @@ from dataset.laion_loader import load_laion
 from utils.preprocessing import preprocess_image
 from utils.imagenet_labels import is_dog
 from utils.visualization import save_image
-from utils.dataset_builder import create_mixed_dataset
+from utils.dataset_builder import create_mixed_dataset, split_dataset
 from utils.create_folders import create_directories
 
 from attacks.pgd import targeted_pgd
@@ -59,6 +59,7 @@ from PIL import Image
 # ==========================================================
 
 def generate_attacks(
+    dataset,
     epsilon=EPSILON,
     alpha=ALPHA,
     max_iterations=MAX_ITERATIONS,
@@ -68,7 +69,6 @@ def generate_attacks(
     ):
 
     # INITIALIZATION
-    dataset = load_laion()
     model = load_resnet()
 
     count = 0

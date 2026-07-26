@@ -5,12 +5,12 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
-
 import pandas as pd
 from pipeline import generate_attacks, evaluate_defenses
 from utils.create_folders import create_directories
 from utils.dataset_builder import split_dataset
 from dataset.laion_loader import load_laion
+from config import EPSILON, ALPHA
 
 dataset = load_laion()
 tuning_indices, evaluation_indices = split_dataset(dataset,tuning_size=100)
@@ -20,22 +20,24 @@ tuning_dataset = dataset.select(tuning_indices)
 # SEARCH SPACE
 # ==========================
 
-EPSILONS = [
-    4 / 255,
-    8 / 255,
-    16 / 255
+SIGMAS = [
+    0.01,
+    0.03,
+    0.05,
+    0.07,
+    0.10
 ]
 
-ALPHAS = [
-    0.001,
-    0.004,
-    0.008,
-    0.010,
-    0.020
+LAMBDAS = [
+    0.01,
+    0.05,
+    0.10,
+    0.20,
+    0.50,
+    0.75
 ]
 
 ITERATIONS = 10
-
 
 # ==========================
 # OUTPUT
@@ -45,7 +47,7 @@ RESULT_FILE = (
     PROJECT_ROOT
     / "tuning"
     / "results"
-    / "pgd_tuning_results.csv"
+    / "gsr_tuning_results.csv"
 )
 
 results = []
@@ -54,14 +56,14 @@ results = []
 # GRID SEARCH
 # ==========================
 
-for epsilon in EPSILONS:
-    for alpha in ALPHAS:
+for sigma in SIGMAS:
+    for lambda_reg in LAMBDAS:
 
         print("\n" + "="*70)
         print(
             f"TESTING "
-            f"epsilon={epsilon:.5f}, "
-            f"alpha={alpha:.5f}, "
+            f"sigma={sigma:.5f}, "
+            f"lambda={lambda_reg:.5f}, "
             f"iterations={ITERATIONS}"
         )
         print("="*70)
@@ -69,14 +71,15 @@ for epsilon in EPSILONS:
         # clean folders
         create_directories()
 
-
         # generate PGD
         count, success = generate_attacks(
             dataset=tuning_dataset,
-            epsilon=epsilon,
-            alpha=alpha,
+            epsilon=EPSILON,
+            alpha=ALPHA,
             max_iterations=ITERATIONS,
-            attack="pgd"
+            attack="gsr",
+            sigma=sigma,
+            lambda_reg=lambda_reg
         )
 
         # evaluate defenses
@@ -90,8 +93,8 @@ for epsilon in EPSILONS:
 
 
         row = {
-            "epsilon": epsilon,
-            "alpha": alpha,
+            "sigma": sigma,
+            "lambda": lambda_reg,
             "iterations": ITERATIONS,
 
             # attack

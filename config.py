@@ -28,7 +28,7 @@ ATTACK = "gsr"
 # ==========================
 # Dataset
 # ==========================
-MAX_IMAGES = 5
+MAX_IMAGES = 100
 IMAGE_SIZE = (512, 512)
 
 # ==========================
@@ -39,8 +39,8 @@ PERSIAN_CAT = 283
 # ==========================
 # PGD
 # ==========================
-EPSILON = 16 / 255      # PERTURBATION SIZE
-ALPHA = 2.55/255        # STEP SIZE
+EPSILON = 4 / 255      # PERTURBATION SIZE (MOST OPTIMAL)
+ALPHA = 2.55/255        # STEP SIZE         (MOST OPTIMAL)
 MAX_ITERATIONS = 10
 
 

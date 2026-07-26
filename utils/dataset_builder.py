@@ -1,4 +1,5 @@
 import shutil
+import random
 from pathlib import Path
 
 
@@ -84,3 +85,16 @@ def create_mixed_dataset(
 
 
     return labels
+
+
+def split_dataset(dataset, tuning_size=100, seed=42):
+
+    indices = list(range(len(dataset)))
+
+    random.seed(seed)
+    random.shuffle(indices)
+
+    tuning_indices = indices[:tuning_size]
+    evaluation_indices = indices[tuning_size:]
+
+    return tuning_indices, evaluation_indices
