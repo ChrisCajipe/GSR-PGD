@@ -3,7 +3,7 @@ from pathlib import Path
 # ==========================
 # MODE OF EXPERIMENTATION
 # ==========================
-MODE = "evaluate"
+MODE = "full"
 # Options:
 # "attack"   = generate adversarial images only
 # "evaluate" = evaluate existing adversarial images only
@@ -39,16 +39,16 @@ PERSIAN_CAT = 283
 # ==========================
 # PGD
 # ==========================
-EPSILON = 4 / 255      # PERTURBATION SIZE (MOST OPTIMAL)
-ALPHA = 2.55/255        # STEP SIZE         (MOST OPTIMAL)
+EPSILON = 4 / 255      # PERTURBATION SIZE              (MOST OPTIMAL)
+ALPHA = 2.55/255        # STEP SIZE                     (MOST OPTIMAL)
 MAX_ITERATIONS = 10
 
 
 # ==========================
 # GSR
 # ==========================
-SIGMA = 0.05            # VARIANCE (STRENGTH OF GSR)
-LAMBDA = 0.1            # WEIGHT OF GSR
+SIGMA = 0.03            # VARIANCE (STRENGTH OF GSR)    (MOST OPTIMAL)
+LAMBDA = 0.5            # WEIGHT OF GSR                 (MOST OPTIMAL)
 
 
 # ==========================
