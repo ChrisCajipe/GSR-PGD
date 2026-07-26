@@ -3,7 +3,7 @@ from pathlib import Path
 # ==========================
 # MODE OF EXPERIMENTATION
 # ==========================
-MODE = "full"
+MODE = "evaluate"
 # Options:
 # "attack"   = generate adversarial images only
 # "evaluate" = evaluate existing adversarial images only
