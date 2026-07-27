@@ -92,10 +92,6 @@ def generate_attacks(
             image
         )
 
-        # DOG FILTER
-        if not is_dog(prediction_id):
-            continue
-
         # ATTACK
         if attack == "pgd":
             adv_image, iterations = targeted_pgd(

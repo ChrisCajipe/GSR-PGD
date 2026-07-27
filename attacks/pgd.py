@@ -2,6 +2,10 @@ import torch
 import torch.nn.functional as F
 from utils.preprocessing import normalize_image
 
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
 # STANDARD PGD
 def targeted_pgd(                   
     model,
@@ -10,6 +14,8 @@ def targeted_pgd(
     epsilon,
     alpha,
     max_iterations):    
+
+    image = image.to(DEVICE)
     
     # INITIALIZE ADVERSARIAL IMAGE
     adv_image = image.clone().detach().requires_grad_(True)                             

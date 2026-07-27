@@ -62,6 +62,7 @@ lightshed_env/
 
 # Results
 results/
+dataset/verified_dogs/
 
 # VS Code
 .vscode/

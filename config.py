@@ -28,19 +28,20 @@ ATTACK = "gsr"
 # ==========================
 # Dataset
 # ==========================
-MAX_IMAGES = 100
+MAX_IMAGES = 1000       # DEFAULT: 1000
 IMAGE_SIZE = (512, 512)
 
 # ==========================
 # Target Class
 # ==========================
 PERSIAN_CAT = 283
+DOG_CLASSES = set(range(151, 269))
 
 # ==========================
 # PGD
 # ==========================
 EPSILON = 4 / 255      # PERTURBATION SIZE              (MOST OPTIMAL)
-ALPHA = 2.55/255        # STEP SIZE                     (MOST OPTIMAL)
+ALPHA = 0.01            # STEP SIZE                     (MOST OPTIMAL)
 MAX_ITERATIONS = 10
 
 
@@ -48,7 +49,7 @@ MAX_ITERATIONS = 10
 # GSR
 # ==========================
 SIGMA = 0.03            # VARIANCE (STRENGTH OF GSR)    (MOST OPTIMAL)
-LAMBDA = 0.5            # WEIGHT OF GSR                 (MOST OPTIMAL)
+LAMBDA = 0.75            # WEIGHT OF GSR                 (MOST OPTIMAL)
 
 
 # ==========================

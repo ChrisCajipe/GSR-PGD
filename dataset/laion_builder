@@ -1,0 +1,245 @@
+import csv
+import requests
+from io import BytesIO
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(PROJECT_ROOT))
+
+from datasets import load_dataset
+from PIL import Image
+
+from models.resnet import load_resnet, predict_image
+from utils.preprocessing import preprocess_image
+from config import DOG_CLASSES
+
+
+# =========================
+# Configuration
+# =========================
+
+TARGET_IMAGES = 1200
+
+OUTPUT_DIR = Path(__file__).parent / "verified_dogs"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+CSV_PATH = OUTPUT_DIR / "metadata.csv"
+
+
+# Resume progress
+existing_images = list(OUTPUT_DIR.glob("*.png"))
+count = len(existing_images)
+
+print(f"Existing images found: {count}")
+
+
+# =========================
+# Load ResNet
+# =========================
+
+print("Loading ResNet-50...")
+
+model = load_resnet()
+
+print("ResNet loaded.")
+
+
+# =========================
+# Load LAION
+# =========================
+
+print("Loading LAION...")
+
+dataset = load_dataset(
+    "laion/laion2B-en-aesthetic",
+    split="train",
+    streaming=True
+)
+
+print("LAION loaded.")
+
+
+# =========================
+# Download helper
+# =========================
+
+def download_image(url):
+
+    for attempt in range(3):
+
+        try:
+            response = requests.get(
+                url,
+                timeout=10
+            )
+
+            response.raise_for_status()
+
+            image = Image.open(
+                BytesIO(response.content)
+            )
+
+            return image.convert("RGB")
+
+        except Exception:
+            print(
+                f"Download failed ({attempt+1}/3)"
+            )
+
+    return None
+
+
+# =========================
+# Build dataset
+# =========================
+
+processed = 0
+
+csv_exists = CSV_PATH.exists()
+
+
+with open(
+    CSV_PATH,
+    "a",
+    newline="",
+    encoding="utf-8"
+) as csvfile:
+
+    writer = csv.writer(csvfile)
+
+    # Write header only once
+    if not csv_exists:
+
+        writer.writerow([
+            "filename",
+            "prediction_id",
+            "prediction_name",
+            "source_url"
+        ])
+
+        csvfile.flush()
+
+
+    try:
+
+        for sample in dataset:
+
+
+            # Stop when enough images are collected
+
+            if count >= TARGET_IMAGES:
+                break
+
+
+            processed += 1
+
+
+            # -------------------------
+            # Text filtering
+            # -------------------------
+
+            text = sample.get("TEXT")
+
+            if not isinstance(text, str):
+                continue
+
+
+            if "dog" not in text.lower():
+                continue
+
+
+
+            # -------------------------
+            # Download image
+            # -------------------------
+
+            url = sample.get("URL")
+
+            if url is None:
+                continue
+
+
+            image = download_image(url)
+
+
+            if image is None:
+                continue
+
+
+
+            # -------------------------
+            # Image quality filter
+            # -------------------------
+
+            if image.width < 256 or image.height < 256:
+                continue
+
+
+
+            # -------------------------
+            # ResNet verification
+            # -------------------------
+
+            tensor = preprocess_image(image)
+
+            prediction_id, prediction_name = predict_image(
+                model,
+                tensor
+            )
+
+
+            # Only keep ImageNet dogs
+
+            if prediction_id not in DOG_CLASSES:
+                continue
+
+
+
+            # -------------------------
+            # Save image
+            # -------------------------
+
+            count += 1
+
+            filename = f"{count:04}.png"
+
+            save_path = OUTPUT_DIR / filename
+
+
+            image.resize(
+                (512, 512)
+            ).save(save_path)
+
+
+
+            # -------------------------
+            # Save metadata
+            # -------------------------
+
+            writer.writerow([
+                filename,
+                prediction_id,
+                prediction_name,
+                url
+            ])
+
+            csvfile.flush()
+
+
+            print(
+                f"[{count}/{TARGET_IMAGES}] "
+                f"{prediction_name}"
+            )
+
+
+    except KeyboardInterrupt:
+
+        print("\nStopped manually.")
+        print(f"Saved images: {count}")
+
+
+
+print("\nFinished.")
+print(f"Collected: {count}")
+print(f"Processed LAION samples: {processed}")

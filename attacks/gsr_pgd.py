@@ -3,6 +3,10 @@ import torch.nn.functional as F
 from utils.preprocessing import normalize_image
 from attacks.spectral import spectral_loss
 
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
 # GAUSSIAN SPECTRAL REGULARIZED PGD
 def gsr_pgd(                   
     model,
@@ -13,14 +17,16 @@ def gsr_pgd(
     max_iterations,
     sigma,
     lambda_reg):    
-    
+
+    image = image.to(DEVICE)
+
     # initialize adversarial image
     adv_image = image.clone().detach().requires_grad_(True)                             
 
     for iteration in range(max_iterations):
         
         outputs = model(normalize_image(adv_image.unsqueeze(0)))
-        target = torch.tensor([target_label], device=image.device, dtype=torch.long)
+        target = torch.tensor([target_label], device=DEVICE, dtype=torch.long)
         
         # LOSS COMPUTATION
         classification_loss = F.cross_entropy(outputs, target)

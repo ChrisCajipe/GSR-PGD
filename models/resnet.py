@@ -8,7 +8,9 @@ from config import (
     PERSIAN_CAT
 )
 
-
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
 
 weights = ResNet50_Weights.IMAGENET1K_V2
 categories = weights.meta["categories"]
@@ -16,14 +18,15 @@ categories = weights.meta["categories"]
 def load_resnet():                # Loads the pretrained ImageNet-1k ResNet-50 model.
 
     model = resnet50(weights=weights)
+    model.to(DEVICE)
     model.eval()
     return model
 
-def predict_image(model, image):    # Predicts the ImageNet class of one preprocessed image.
-    
+def predict_image(model, image):
+
     image = normalize_image(image)
 
-    image = image.unsqueeze(0)
+    image = image.unsqueeze(0).to(DEVICE)
 
     with torch.no_grad():
         logits = model(image)
@@ -38,6 +41,7 @@ def evaluate_resnet():
 
     model = load_resnet()
     adv_images = list(ADV_DIR.glob("*.png"))
+    print(f"Found {len(adv_images)} adversarial images")
 
     total = 0
     successful = 0
@@ -50,6 +54,8 @@ def evaluate_resnet():
 
         if prediction_id == PERSIAN_CAT:
             successful += 1
+
+    
 
     return {
         "images": total,
