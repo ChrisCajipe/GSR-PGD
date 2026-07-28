@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("GSR-PGD \u2013 Adversarial Robustness Evaluation Tool")
         self.resize(1400, 860)
-        self.setMinimumSize(1000, 640)
+        self.setFixedSize(1400, 860)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -45,10 +45,12 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self.about_panel)    # index 2
 
         # Once an attack is generated on the Upload page, jump to Results.
-        self.upload_panel.generateButton.clicked.connect(
-            lambda: self.switch_page(NavBar.PAGE_RESULTS)
-        )
+        self.upload_panel.attackFinished.connect(self.show_results)
 
     def switch_page(self, page_index: int):
         self.stacked_widget.setCurrentIndex(page_index)
         self.nav_bar.set_active_page(page_index)
+
+    def show_results(self, results):
+        self.results_panel.load_results(results)
+        self.switch_page(NavBar.PAGE_RESULTS)

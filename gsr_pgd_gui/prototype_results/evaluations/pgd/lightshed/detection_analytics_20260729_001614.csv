@@ -1,0 +1,2 @@
+filename,entropy,is_poisoned
+pgd.png,1.080247,tensor(True)

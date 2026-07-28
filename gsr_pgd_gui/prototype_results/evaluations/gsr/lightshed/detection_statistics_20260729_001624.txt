@@ -1,0 +1,6 @@
+
+Results for C:\Users\chris\Documents\School\Thesis\GSR-PGD\gsr_pgd_gui\prototype_results\attacks\gsr\adversarial:
+Total images: 1
+Detected poisoned: 0 (0.00%)
+Detected clean: 1
+

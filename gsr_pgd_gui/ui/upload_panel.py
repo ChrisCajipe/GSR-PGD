@@ -4,10 +4,6 @@ upload_panel.py
 "UPLOAD" page: lets the user pick a 512x512 ImageNet image, preview
 it, choose a target class for the attack, verify it with ResNet-50
 and finally trigger adversarial generation.
-
-Backend hook points (see TODOs):
-    - verify_image()
-    - generate_attack()
 """
 import os
 from PySide6.QtCore import Qt
@@ -18,20 +14,21 @@ from PySide6.QtWidgets import (
 from PIL.ImageQt import ImageQt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import Qt, Signal
 
 from ui.page_header import PageHeader
 
 from backend.image_loader import load_image
 from backend.classifier import predict_image
+from backend.ui_config import TARGET_CLASSES
+from backend.attack_runner import generate_attacks
 
 # Placeholder ImageNet target classes shown in the mock-up.
-TARGET_CLASSES = [
-    "Electric Cray", "Brambling", "Goldfish", "Water Ouzel",
-    "Quail", "Sea Slug", "Persian Cat", "Piggy Bank",
-]
+TARGET_CLASS_NAMES = list(TARGET_CLASSES.keys())
 
 
 class UploadPanel(QWidget):
+    attackFinished = Signal(dict)
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -155,8 +152,8 @@ class UploadPanel(QWidget):
 
         # Real dropdown menu (click to expand) instead of an always-open list.
         self.targetClassCombo = QComboBox()
-        self.targetClassCombo.addItems(TARGET_CLASSES)
-        self.targetClassCombo.setCurrentText("Sea Slug")
+        self.targetClassCombo.addItems(TARGET_CLASS_NAMES)
+        self.targetClassCombo.setCurrentText("Persian Cat")
         self.targetClassCombo.setCursor(Qt.PointingHandCursor)
         target_col.addWidget(self.targetClassCombo)
 
@@ -260,7 +257,10 @@ class UploadPanel(QWidget):
 
         # Store the uploaded image information
         self.imagePath = file_path
-        self.uploadedImage = load_image(file_path)
+        loaded = load_image(file_path)
+
+        self.uploadedImage = loaded["pil"]
+        self.uploadedTensor = loaded["tensor"]
 
         self._display_image(self.uploadedImage)
         self.verify_image()
@@ -279,12 +279,7 @@ class UploadPanel(QWidget):
             self._display_image(self.uploadedImage)
 
     def verify_image(self):
-        """
-        TODO: Connect to backend `verify_image()` (ResNet-50 classifier).
-        Should:
-            1. Run the currently loaded image through ResNet-50.
-            2. Update `self.originalPredictionLabel` with the predicted class.
-        """
+
         self.originalPredictionLabel.setText("Verifying...")
         if not hasattr(self, "uploadedImage"):
             QMessageBox.warning(
@@ -301,11 +296,33 @@ class UploadPanel(QWidget):
         )
 
     def generate_attack(self):
-        """
-        TODO: Connect to backend `generate_attack()`.
-        Should:
-            1. Read the selected target class from `self.targetClassCombo`.
-            2. Run both standard PGD and GSR-PGD attack generation.
-            3. Trigger navigation to the Results page and populate it.
-        """
-        pass
+
+        if not hasattr(self, "uploadedImage"):
+            QMessageBox.warning(
+                self,
+                "No Image",
+                "Please upload an image first."
+            )
+            return
+        
+        target_name = self.targetClassCombo.currentText()
+        target_label = TARGET_CLASSES[target_name]
+
+        results = generate_attacks(
+            image=self.uploadedTensor,
+            target_class=target_label
+        )
+        
+
+        self.pgdImage = results["pgd"]
+        self.gsrImage = results["gsr"]
+
+        self.pgdIterations = results["pgd_iterations"]
+        self.gsrIterations = results["gsr_iterations"]
+
+        print("PGD iterations:", self.pgdIterations)
+        print("GSR-PGD iterations:", self.gsrIterations)
+
+        results["original"] = self.uploadedTensor
+
+        self.attackFinished.emit(results)

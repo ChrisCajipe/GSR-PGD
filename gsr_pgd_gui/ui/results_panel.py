@@ -10,9 +10,9 @@ comparison layouts via a QStackedWidget.
 Right side: MetricsPanel with General / LightShed / TruFor tables.
 
 Backend hook points (see TODOs):
-    - compare_results()
     - save_results()
 """
+from PIL import Image
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -20,9 +20,16 @@ from PySide6.QtWidgets import (
     QButtonGroup, QStackedWidget, QSizePolicy, QGridLayout, QFileDialog
 )
 
+from PySide6.QtGui import (
+    QPainter,
+    QPainterPath,
+    QPixmap,
+)
+
 from ui.page_header import PageHeader
 from ui.metrics_panel import MetricsPanel
 from ui.heatmap_panel import HeatmapPanel
+from backend.pixmap_util import tensor_to_pixmap
 
 
 def make_image_placeholder(text: str, min_size=(220, 220)) -> QLabel:
@@ -67,16 +74,6 @@ class ResultsPanel(QWidget):
         self.metricsPanel = MetricsPanel()
         body.addWidget(self.metricsPanel, stretch=2)
 
-        # ---- Footer: save results -----------------------------------------
-        footer = QHBoxLayout()
-        footer.addStretch(1)
-        self.saveResultsButton = QPushButton("Save Results")
-        self.saveResultsButton.setObjectName("PrimaryButton")
-        self.saveResultsButton.setCursor(Qt.PointingHandCursor)
-        self.saveResultsButton.clicked.connect(self.save_results)
-        footer.addWidget(self.saveResultsButton)
-        root.addLayout(footer)
-
     # ------------------------------------------------------------------
     def _build_images_card(self) -> QFrame:
         card = QFrame()
@@ -94,7 +91,7 @@ class ResultsPanel(QWidget):
         self.adversarialToggleButton = self._make_toggle("Adversarial")
         self.originalToggleButton = self._make_toggle("Original")
         self.perturbationToggleButton = self._make_toggle("Perturbation")
-        self.heatmapsToggleButton = self._make_toggle("Heatmaps")
+        self.heatmapsToggleButton = self._make_toggle("Evaluation Output")
         self.overallToggleButton = self._make_toggle("Overall")
 
         for btn in (
@@ -113,7 +110,8 @@ class ResultsPanel(QWidget):
         self.viewStack.addWidget(self._build_adversarial_view())
         self.viewStack.addWidget(self._build_original_view())
         self.viewStack.addWidget(self._build_perturbation_view())
-        self.viewStack.addWidget(HeatmapPanel())
+        self.heatmapPanel = HeatmapPanel()
+        self.viewStack.addWidget(self.heatmapPanel)
         self.viewStack.addWidget(self._build_overall_view())
 
         self.adversarialToggleButton.clicked.connect(lambda: self._switch_view(0))
@@ -206,35 +204,103 @@ class ResultsPanel(QWidget):
         return widget
 
     def _build_overall_view(self) -> QWidget:
-        """Full grid overview mirroring the reference mock-up."""
         widget = QWidget()
         grid = QGridLayout(widget)
         grid.setSpacing(14)
 
-        # Column / row captions
-        grid.addWidget(self._caption_label("ORIGINAL"), 0, 0)
-        grid.addWidget(self._caption_label("GSR-PGD"), 0, 1)
-        grid.addWidget(self._caption_label(""), 0, 2)
+        # ---------------- GSR-PGD ----------------
+        grid.addWidget(self._caption_label("GSR-PGD"), 0, 0)
 
-        self.overallOriginalImageLabel = make_image_placeholder("Original", (180, 180))
-        grid.addLayout(captioned(self.overallOriginalImageLabel, ""), 1, 0)
+        self.overallGsrAdversarialLabel = make_image_placeholder(
+            "Adversarial Image", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallGsrAdversarialLabel,
+                "Adversarial Image"
+            ),
+            1, 0
+        )
 
-        self.overallGsrAdversarialLabel = make_image_placeholder("Adversarial Image", (180, 180))
-        grid.addLayout(captioned(self.overallGsrAdversarialLabel, "Adversarial Image"), 1, 1)
+        self.overallGsrPerturbationLabel = make_image_placeholder(
+            "Perturbation", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallGsrPerturbationLabel,
+                "Adversarial Perturbation"
+            ),
+            1, 1
+        )
 
-        self.overallGsrPerturbationLabel = make_image_placeholder("Adversarial Perturbation", (180, 180))
-        grid.addLayout(captioned(self.overallGsrPerturbationLabel, "Adversarial Perturbation"), 1, 2)
+        self.overallGsrLightShedLabel = make_image_placeholder(
+            "LightShed", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallGsrLightShedLabel,
+                "LightShed Extracted Perturbation"
+            ),
+            1, 2
+        )
 
-        grid.addWidget(self._caption_label("STANDARD"), 2, 0)
+        self.overallGsrTruForLabel = make_image_placeholder(
+            "TruFor", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallGsrTruForLabel,
+                "TruFor Heatmap"
+            ),
+            1, 3
+        )
 
-        self.overallPgdAdversarialLabel = make_image_placeholder("Adversarial Image", (180, 180))
-        grid.addLayout(captioned(self.overallPgdAdversarialLabel, "Adversarial Image"), 3, 0)
+        # ---------------- STANDARD PGD ----------------
+        grid.addWidget(self._caption_label("STANDARD PGD"), 2, 0)
 
-        self.overallPgdPerturbationLabel = make_image_placeholder("Adversarial Perturbation", (180, 180))
-        grid.addLayout(captioned(self.overallPgdPerturbationLabel, "Adversarial Perturbation"), 3, 1)
+        self.overallPgdAdversarialLabel = make_image_placeholder(
+            "Adversarial Image", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallPgdAdversarialLabel,
+                "Adversarial Image"
+            ),
+            3, 0
+        )
 
-        self.overallLightshedExtractedLabel = make_image_placeholder("LightShed Extracted Perturbation", (180, 180))
-        grid.addLayout(captioned(self.overallLightshedExtractedLabel, "LightShed Extracted Perturbation"), 3, 2)
+        self.overallPgdPerturbationLabel = make_image_placeholder(
+            "Perturbation", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallPgdPerturbationLabel,
+                "Adversarial Perturbation"
+            ),
+            3, 1
+        )
+
+        self.overallPgdLightShedLabel = make_image_placeholder(
+            "LightShed", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallPgdLightShedLabel,
+                "LightShed Extracted Perturbation"
+            ),
+            3, 2
+        )
+
+        self.overallPgdTruForLabel = make_image_placeholder(
+            "TruFor", (170, 170)
+        )
+        grid.addLayout(
+            captioned(
+                self.overallPgdTruForLabel,
+                "TruFor Heatmap"
+            ),
+            3, 3
+        )
 
         return widget
 
@@ -246,6 +312,27 @@ class ResultsPanel(QWidget):
     # ------------------------------------------------------------------
     # Backend hook placeholders
     # ------------------------------------------------------------------
+    def _path_to_pixmap(self, path):
+        if path is None:
+            return None
+
+        pixmap = QPixmap(str(path))
+
+        if pixmap.isNull():
+            return None
+
+        return pixmap
+    
+    def load_results(self, results):
+        """
+        Receive attack results from the backend and display them.
+        """
+        print("Results received!")
+        self.results = results
+
+        # update every view
+        self.compare_results()
+    
     def compare_results(self, view_index: int = None):
         """
         TODO: Connect to backend `compare_results()`.
@@ -259,15 +346,116 @@ class ResultsPanel(QWidget):
         `view_index` indicates which toggle tab is now visible, useful for
         lazy-loading only what's needed.
         """
-        pass
+        if not hasattr(self, "results"):
+            return
 
-    def save_results(self):
-        """
-        TODO: Connect to backend `save_results()`.
-        Should export the currently displayed images/metrics to disk.
-        A QFileDialog.getExistingDirectory() or getSaveFileName() call is
-        a reasonable starting point.
-        """
-        # Example scaffold (left inactive until backend is wired up):
-        # directory = QFileDialog.getExistingDirectory(self, "Save Results To")
-        pass
+        # Tensor Images
+            # ACTUAL IMAGE TENSORS
+        pgd_pix = tensor_to_pixmap(self.results["pgd"])
+        gsr_pix = tensor_to_pixmap(self.results["gsr"])
+        orig_pix = tensor_to_pixmap(self.results["original"])
+
+            # PERTURBATION TENSORS
+        gsr_pert = tensor_to_pixmap(self.results["gsr_perturbation"])
+        pgd_pert = tensor_to_pixmap(self.results["pgd_perturbation"])
+
+        # Main Views
+        self._set_pixmap(self.gsrImageLabel, gsr_pix)
+        self._set_pixmap(self.pgdImageLabel, pgd_pix)
+        self._set_pixmap(self.originalResultImageLabel, orig_pix)
+
+        # Perturbation
+        self._set_pixmap(self.gsrPerturbationLabel, gsr_pert)
+        self._set_pixmap(self.pgdPerturbationLabel, pgd_pert)
+
+        # LIGHTSHED EXTRACTED PERTURBATIONS
+        gsr_ls = self.results.get("gsr_lightshed")
+        pgd_ls = self.results.get("pgd_lightshed")
+
+        if gsr_ls:
+            lightshed_data = gsr_ls.get("extracted_perturbation")
+
+            if isinstance(lightshed_data, dict):
+                path = lightshed_data.get("extracted_perturbation")
+            else:
+                path = lightshed_data
+
+            pix = self._path_to_pixmap(path)
+
+            if pix:
+                self._set_pixmap(self.heatmapPanel.lightshedHeatmapGsrLabel,pix)
+                self._set_pixmap(self.overallGsrLightShedLabel,pix)
+
+        if pgd_ls:
+            lightshed_data = pgd_ls.get("extracted_perturbation")
+
+            if isinstance(lightshed_data, dict):
+                path = lightshed_data.get("extracted_perturbation")
+            else:
+                path = lightshed_data
+
+            pix = self._path_to_pixmap(path)
+
+            if pix:
+                self._set_pixmap(self.heatmapPanel.lightshedHeatmapPgdLabel, pix)
+                self._set_pixmap(self.overallPgdLightShedLabel, pix)
+
+        # TRUFOR HEATMAPS AYOKO NAAAAAAAA
+        gsr_tf = self.results.get("gsr_trufor")
+        pgd_tf = self.results.get("pgd_trufor")
+
+        if gsr_tf:
+            pix = self._path_to_pixmap(gsr_tf.get("heatmap"))
+            if pix:
+                self._set_pixmap(self.heatmapPanel.truforHeatmapGsrLabel, pix)
+                self._set_pixmap(self.overallGsrTruForLabel, pix)
+        if pgd_tf:
+            pix = self._path_to_pixmap(pgd_tf.get("heatmap"))
+            if pix:
+                self._set_pixmap(self.heatmapPanel.truforHeatmapPgdLabel, pix)
+                self._set_pixmap(self.overallPgdTruForLabel, pix)
+
+        # Overall
+        self._set_pixmap(self.overallGsrAdversarialLabel, gsr_pix)
+        self._set_pixmap(self.overallPgdAdversarialLabel, pgd_pix)
+        self._set_pixmap(self.overallGsrPerturbationLabel, gsr_pert)
+        self._set_pixmap(self.overallPgdPerturbationLabel, pgd_pert)
+
+    def _set_pixmap(self, label, pixmap):
+        # Scale while preserving aspect ratio
+        scaled = pixmap.scaled(
+            label.size(),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation,
+        )
+
+        # Create transparent pixmap
+        rounded = QPixmap(scaled.size())
+        rounded.fill(Qt.transparent)
+
+        # Draw rounded image
+        painter = QPainter(rounded)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        path = QPainterPath()
+        path.addRoundedRect(
+            rounded.rect(),
+            18,   # corner radius
+            18
+        )
+
+        painter.setClipPath(path)
+        painter.drawPixmap(0, 0, scaled)
+        painter.end()
+
+        label.setPixmap(rounded)
+
+        # Remove placeholder appearance
+        label.setText("")
+        label.setStyleSheet("""
+            QLabel {
+                background: transparent;
+                border: 2px solid #D8DCEB;
+                border-radius: 18px;
+            }
+        """)

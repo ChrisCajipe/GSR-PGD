@@ -10,10 +10,14 @@ from utils.preprocessing import preprocess_image
 from utils.imagenet_labels import is_dog
 from attacks.pgd import targeted_pgd
 from models.resnet import load_resnet, predict_image
+from utils.dataset_builder import split_dataset
 
 MAX_ITERATIONS = 100
 
 dataset = load_laion()
+tuning_indices, evaluation_indices = split_dataset(dataset,tuning_size=100)
+tuning_dataset = dataset.select(tuning_indices)
+
 model = load_resnet()
 
 iterations_used = []
