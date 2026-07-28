@@ -6,7 +6,6 @@ it, choose a target class for the attack, verify it with ResNet-50
 and finally trigger adversarial generation.
 
 Backend hook points (see TODOs):
-    - upload_image()
     - verify_image()
     - generate_attack()
 """
@@ -23,6 +22,7 @@ from PySide6.QtWidgets import QMessageBox
 from ui.page_header import PageHeader
 
 from backend.image_loader import load_image
+from backend.classifier import predict_image
 
 # Placeholder ImageNet target classes shown in the mock-up.
 TARGET_CLASSES = [
@@ -231,7 +231,6 @@ class UploadPanel(QWidget):
     # Backend hook placeholders
     # ------------------------------------------------------------------
 
-
     def _display_image(self, image):
         qt_image = ImageQt(image)
         pixmap = QPixmap.fromImage(qt_image)
@@ -244,22 +243,27 @@ class UploadPanel(QWidget):
             )
         )
 
-    def upload_image(self, file_path: str = None):
+    def upload_image(self, file_path=None):
+        if isinstance(file_path, bool):
+            file_path = None
+
         if file_path is None:
             dialog = QFileDialog(self)
             dialog.setFileMode(QFileDialog.ExistingFile)
             dialog.setNameFilter("Images (*.png *.jpg *.jpeg)")
             dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
 
-            result = dialog.exec()
-
-            if result:
+            if dialog.exec():
                 file_path = dialog.selectedFiles()[0]
             else:
                 return
-        
+
+        # Store the uploaded image information
+        self.imagePath = file_path
         self.uploadedImage = load_image(file_path)
+
         self._display_image(self.uploadedImage)
+        self.verify_image()
 
         self.fileNameLabel.setText(
             f"File Name: {os.path.basename(file_path)}"
@@ -281,7 +285,20 @@ class UploadPanel(QWidget):
             1. Run the currently loaded image through ResNet-50.
             2. Update `self.originalPredictionLabel` with the predicted class.
         """
-        pass
+        self.originalPredictionLabel.setText("Verifying...")
+        if not hasattr(self, "uploadedImage"):
+            QMessageBox.warning(
+                self,
+                "No Image",
+                "Please upload an image first."
+            )
+            return
+
+        class_name, confidence = predict_image(self.uploadedImage)
+
+        self.originalPredictionLabel.setText(
+            f"{class_name}\n({confidence*100:.2f}%)"
+        )
 
     def generate_attack(self):
         """
