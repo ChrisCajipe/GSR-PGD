@@ -57,7 +57,7 @@ for sample in dataset:
         f"success={success}/{count}"
     )
 
-    if count >= MAX_IMAGES:
+    if count >= 100:
         break
 
 print("\n========== ITERATION TUNING ==========")
