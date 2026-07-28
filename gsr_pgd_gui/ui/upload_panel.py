@@ -15,15 +15,16 @@ from PIL.ImageQt import ImageQt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QThread
+
 
 from ui.page_header import PageHeader
 
 from backend.image_loader import load_image
 from backend.classifier import predict_image
 from backend.ui_config import TARGET_CLASSES
-from backend.attack_runner import generate_attacks
+from backend.attack_worker import AttackWorker
 
-# Placeholder ImageNet target classes shown in the mock-up.
 TARGET_CLASS_NAMES = list(TARGET_CLASSES.keys())
 
 
@@ -296,7 +297,6 @@ class UploadPanel(QWidget):
         )
 
     def generate_attack(self):
-
         if not hasattr(self, "uploadedImage"):
             QMessageBox.warning(
                 self,
@@ -304,16 +304,64 @@ class UploadPanel(QWidget):
                 "Please upload an image first."
             )
             return
-        
+
+
+        # Update UI immediately
+        self.generateButton.setText(
+            "Generating... Please Wait..."
+        )
+        self.generateButton.setEnabled(False)
+
+
         target_name = self.targetClassCombo.currentText()
         target_label = TARGET_CLASSES[target_name]
 
-        results = generate_attacks(
-            image=self.uploadedTensor,
-            target_class=target_label
-        )
-        
 
+        # Create thread
+        self.thread = QThread()
+
+        self.worker = AttackWorker(
+            self.uploadedTensor,
+            target_label
+        )
+
+        self.worker.moveToThread(self.thread)
+
+
+        # Start worker
+        self.thread.started.connect(
+            self.worker.run
+        )
+
+
+        # When finished
+        self.worker.finished.connect(
+            self.attack_finished
+        )
+
+
+        self.worker.error.connect(
+            self.attack_error
+        )
+
+
+        # Cleanup
+        self.worker.finished.connect(
+            self.thread.quit
+        )
+
+        self.worker.finished.connect(
+            self.worker.deleteLater
+        )
+
+        self.thread.finished.connect(
+            self.thread.deleteLater
+        )
+
+
+        self.thread.start()
+
+    def attack_finished(self, results):
         self.pgdImage = results["pgd"]
         self.gsrImage = results["gsr"]
 
@@ -323,6 +371,28 @@ class UploadPanel(QWidget):
         print("PGD iterations:", self.pgdIterations)
         print("GSR-PGD iterations:", self.gsrIterations)
 
+
         results["original"] = self.uploadedTensor
 
+
         self.attackFinished.emit(results)
+
+
+        self.generateButton.setText(
+            "Generate Adversarial Image"
+        )
+
+        self.generateButton.setEnabled(True)
+
+    def attack_error(self, error):
+        QMessageBox.critical(
+            self,
+            "Attack Failed",
+            error
+        )
+
+        self.generateButton.setText(
+            "Generate Adversarial Image"
+        )
+
+        self.generateButton.setEnabled(True)

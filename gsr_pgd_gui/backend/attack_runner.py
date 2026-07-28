@@ -10,12 +10,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from utils.preprocessing import normalize_image
 from attacks.pgd import targeted_pgd
 from attacks.gsr_pgd import gsr_pgd
 from backend.perturbation import (
     create_perturbation,
     save_perturbation,
 )
+from backend.classifier import predict_tensor
 
 from backend.ui_config import (
     EPSILON,
@@ -99,6 +101,12 @@ def generate_attacks(
         lambda_reg=LAMBDA,
     )
 
+    pgd_prediction, pgd_conf = predict_tensor(pgd_image)
+    gsr_prediction, gsr_conf = predict_tensor(gsr_image)
+
+    print("PGD Prediction:", pgd_prediction, pgd_conf)
+    print("GSR Prediction:", gsr_prediction, gsr_conf)
+
     pgd_perturbation = create_perturbation(
         image,
         pgd_image,
@@ -178,6 +186,26 @@ def generate_attacks(
     #
     # Return everything
     #
+
+    # DEBUG
+    with torch.no_grad():
+        output = model(
+            normalize_image(
+                pgd_image.unsqueeze(0)
+            )
+        )
+
+        prediction = output.argmax(dim=1).item()
+
+    print(
+        "Attack model prediction:",
+        weights.meta["categories"][prediction]
+    )
+
+    print(
+        "Target:",
+        weights.meta["categories"][target_class]
+    )
 
     return {
 

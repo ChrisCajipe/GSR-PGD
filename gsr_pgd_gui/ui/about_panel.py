@@ -9,8 +9,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QLabel, QSizePolicy
 )
-
+from PySide6.QtGui import QPixmap
 from ui.page_header import PageHeader
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+AUTHOR_DIR = BASE_DIR / "assets" / "authors"
 
 PLACEHOLDER_DESCRIPTION = (
     "GSR-PGD (Gaussian Spectral-Regularized Projected Gradient Descent) is an "
@@ -27,10 +31,26 @@ INSTRUCTIONS = [
 ]
 
 AUTHORS = [
-    ("ALON, NOEMI MANLISES", "Contributor \u2013 research & development."),
-    ("VICU\u00d1A, SOFIA ALEZANDRA GROSPE", "Contributor \u2013 research & development."),
-    ("CAJIPE, CHRIS CAGUIN", "Contributor \u2013 research & development."),
-    ("PACAON, MARK REDEN SUCANO", "Contributor \u2013 research & development."),
+    (
+        "ALON, NOEMI MANLISES",
+        "AUTHOR - Ms. Alon is currently in her third year pursuing a Bachelor of Science in Computer Science, with a specialization in Intelligent Systems, at Laguna State Polytechnic University – Siniloan Campus (LSPU-SC).",
+        AUTHOR_DIR / "alon.png"
+    ),
+    (
+        "VICUÑA, SOFIA ALEZANDRA GROSPE",
+        "AUTHOR - Ms. Vicuña is a third-year Bachelor of Science in Computer Science student, specializing in Intelligent Systems, at Laguna State Polytechnic University – Siniloan Campus (LSPU-SC).",
+        AUTHOR_DIR / "vicuna.png"
+    ),
+    (
+        "CAJIPE, CHRIS CAGUIN",
+        "AUTHOR - Mr. Cajipe is a third-year student undertaking a Bachelor of Science in Computer Science, majoring in Intelligent Systems, at Laguna State Polytechnic University – Siniloan Campus (LSPU-SC).",
+        AUTHOR_DIR / "cajipe.png"
+    ),
+    (
+        "PACAON, MARK REDEN SUCANO",
+        "THESIS ADVISER – Sir Pacaon is a full-time teaching faculty member at Laguna State Polytechnic University - Siniloan Campus.",
+        AUTHOR_DIR / "sir_pacs.png"
+    )
 ]
 
 
@@ -45,12 +65,12 @@ class AboutPanel(QWidget):
         header = PageHeader(icon_text="\U0001F4C4", title="ABOUT GSR-PGD", blue=False)
         root.addWidget(header)
 
-        body = QHBoxLayout()
+        body = QVBoxLayout()
         body.setSpacing(20)
         root.addLayout(body, stretch=1)
 
-        body.addWidget(self._build_description_card(), stretch=1)
-        body.addWidget(self._build_authors_card(), stretch=2)
+        body.addWidget(self._build_description_card())
+        body.addWidget(self._build_authors_card())
 
     # ------------------------------------------------------------------
     def _build_description_card(self) -> QFrame:
@@ -106,21 +126,34 @@ class AboutPanel(QWidget):
         grid.setSpacing(16)
         layout.addLayout(grid)
 
-        for i, (name, bio) in enumerate(AUTHORS):
+        for i, (name, bio, photo_path) in enumerate(AUTHORS):
             row, col = divmod(i, 2)
-            grid.addLayout(self._author_tile(name, bio), row, col)
+            grid.addLayout(self._author_tile(name, bio, photo_path), row, col)
 
         layout.addStretch(1)
         return card
 
-    def _author_tile(self, name: str, bio: str) -> QHBoxLayout:
+    def _author_tile(self, name: str, bio: str, photo_path:str) -> QHBoxLayout:
+        
         layout = QHBoxLayout()
         layout.setSpacing(12)
 
-        photo = QLabel("Photo")
+        photo = QLabel()
         photo.setObjectName("ImagePlaceholder")
         photo.setFixedSize(90, 90)
         photo.setAlignment(Qt.AlignCenter)
+
+        pixmap = QPixmap(str(photo_path))
+
+        if not pixmap.isNull():
+            pixmap = pixmap.scaled(
+                90,
+                90,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+
+            photo.setPixmap(pixmap)
 
         text_col = QVBoxLayout()
         name_label = QLabel(name)

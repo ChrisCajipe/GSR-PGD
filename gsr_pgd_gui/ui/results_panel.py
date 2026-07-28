@@ -30,6 +30,11 @@ from ui.page_header import PageHeader
 from ui.metrics_panel import MetricsPanel
 from ui.heatmap_panel import HeatmapPanel
 from backend.pixmap_util import tensor_to_pixmap
+from backend.classifier import predict_tensor
+from backend.metrics import (
+    compute_psnr,
+    compute_ssim,
+)
 
 
 def make_image_placeholder(text: str, min_size=(220, 220)) -> QLabel:
@@ -334,18 +339,7 @@ class ResultsPanel(QWidget):
         self.compare_results()
     
     def compare_results(self, view_index: int = None):
-        """
-        TODO: Connect to backend `compare_results()`.
-        Should:
-            1. Pull latest original / PGD / GSR-PGD images and perturbations.
-            2. Populate the QLabel placeholders (originalResultImageLabel,
-               pgdImageLabel, gsrImageLabel, *PerturbationLabel, etc.)
-               with actual QPixmap data.
-            3. Update MetricsPanel labels (PSNR, SSIM, prediction, status).
-            4. Update HeatmapPanel labels with LightShed/TruFor heatmaps.
-        `view_index` indicates which toggle tab is now visible, useful for
-        lazy-loading only what's needed.
-        """
+
         if not hasattr(self, "results"):
             return
 
@@ -354,6 +348,75 @@ class ResultsPanel(QWidget):
         pgd_pix = tensor_to_pixmap(self.results["pgd"])
         gsr_pix = tensor_to_pixmap(self.results["gsr"])
         orig_pix = tensor_to_pixmap(self.results["original"])
+
+        # ----------------------------
+        # ResNet-50 predictions
+        # ----------------------------
+
+        pgd_label, pgd_conf = predict_tensor(
+            self.results["pgd"]
+        )
+
+        gsr_label, gsr_conf = predict_tensor(
+            self.results["gsr"]
+)
+
+
+        self.metricsPanel.predictionPgdLabel.setText(
+            f"{pgd_label}\n({pgd_conf:.2%})"
+        )
+
+        self.metricsPanel.predictionGsrLabel.setText(
+            f"{gsr_label}\n({gsr_conf:.2%})"
+        )
+
+        # ----------------------------
+        # PSNR / SSIM
+        # ----------------------------
+
+        original = self.results["original"]
+        pgd = self.results["pgd"]
+        gsr = self.results["gsr"]
+
+
+        pgd_psnr = compute_psnr(
+            original,
+            pgd
+        )
+
+        gsr_psnr = compute_psnr(
+            original,
+            gsr
+        )
+
+
+        pgd_ssim = compute_ssim(
+            original,
+            pgd
+        )
+
+        gsr_ssim = compute_ssim(
+            original,
+            gsr
+        )
+
+
+        self.metricsPanel.psnrPgdLabel.setText(
+            f"{pgd_psnr:.2f} dB"
+        )
+
+        self.metricsPanel.psnrGsrLabel.setText(
+            f"{gsr_psnr:.2f} dB"
+        )
+
+
+        self.metricsPanel.ssimPgdLabel.setText(
+            f"{pgd_ssim:.4f}"
+        )
+
+        self.metricsPanel.ssimGsrLabel.setText(
+            f"{gsr_ssim:.4f}"
+        )
 
             # PERTURBATION TENSORS
         gsr_pert = tensor_to_pixmap(self.results["gsr_perturbation"])
@@ -414,6 +477,54 @@ class ResultsPanel(QWidget):
             if pix:
                 self._set_pixmap(self.heatmapPanel.truforHeatmapPgdLabel, pix)
                 self._set_pixmap(self.overallPgdTruForLabel, pix)
+
+        # -----------------------------
+        # Detection Metrics
+        # -----------------------------
+
+        # LightShed
+        pgd_ls = self.results.get("pgd_lightshed")
+        gsr_ls = self.results.get("gsr_lightshed")
+
+        if pgd_ls:
+            lightshed_detected = pgd_ls["extracted_perturbation"]["detected"]
+
+            self.metricsPanel.set_detection_status(
+                self.metricsPanel.lightshedStatusPgdLabel,
+                lightshed_detected
+            )
+
+
+        if gsr_ls:
+            lightshed_detected = gsr_ls["extracted_perturbation"]["detected"]
+
+            self.metricsPanel.set_detection_status(
+                self.metricsPanel.lightshedStatusGsrLabel,
+                lightshed_detected
+            )
+
+
+        # TruFor
+        pgd_tf = self.results.get("pgd_trufor")
+        gsr_tf = self.results.get("gsr_trufor")
+
+
+        if pgd_tf:
+            trufor_detected = pgd_tf["prediction"]
+
+            self.metricsPanel.set_detection_status(
+                self.metricsPanel.truforStatusPgdLabel,
+                trufor_detected
+            )
+
+
+        if gsr_tf:
+            trufor_detected = gsr_tf["prediction"]
+
+            self.metricsPanel.set_detection_status(
+                self.metricsPanel.truforStatusGsrLabel,
+                trufor_detected
+            )
 
         # Overall
         self._set_pixmap(self.overallGsrAdversarialLabel, gsr_pix)

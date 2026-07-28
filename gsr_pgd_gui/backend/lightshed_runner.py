@@ -103,10 +103,6 @@ def read_lightshed_results(output_folder):
     
     extracted = None
 
-    print("LightShed candidates:")
-    for c in candidates:
-        print(c)
-
     if candidates:
         extracted = candidates[0]
 

@@ -93,9 +93,9 @@ class MetricsPanel(QFrame):
 
         # Header row
         header_row = QHBoxLayout()
-        header_row.addWidget(self._col_label("METRICS", flex=2))
-        header_row.addWidget(self._col_label("PGD", flex=1))
-        header_row.addWidget(self._col_label("GSR-PGD", flex=1))
+        header_row.addWidget(self._col_label("METRICS", flex=2), stretch=2)
+        header_row.addWidget(self._col_label("PGD", flex=1), stretch=1)
+        header_row.addWidget(self._col_label("GSR-PGD", flex=1), stretch=1)
         layout.addLayout(header_row)
         layout.addWidget(self._divider())
 
@@ -110,7 +110,7 @@ class MetricsPanel(QFrame):
             gsr_value = QLabel("--")
             for value_label in (pgd_value, gsr_value):
                 value_label.setObjectName("StatusYes" if status else "MetricsValue")
-                value_label.setAlignment(Qt.AlignCenter)
+                value_label.setAlignment(Qt.AlignLeft)
                 row_layout.addWidget(value_label, stretch=1)
 
             layout.addLayout(row_layout)
@@ -122,7 +122,8 @@ class MetricsPanel(QFrame):
     def _col_label(self, text: str, flex: int) -> QLabel:
         label = QLabel(text)
         label.setObjectName("MetricsColHeader")
-        label.setAlignment(Qt.AlignCenter if flex == 1 else Qt.AlignLeft)
+        label.setAlignment(Qt.AlignLeft)
+        label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         return label
 
     def _divider(self):
