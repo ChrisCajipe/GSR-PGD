@@ -64,6 +64,7 @@ lightshed_env/
 results/
 dataset/verified_dogs/
 tuning/results/
+gsr_pgd_gui/prototype_results/
 
 # VS Code
 .vscode/
@@ -72,3 +73,37 @@ tuning/results/
 .DS_Store
 Thumbs.db
 
+gsr_pgd_gui/prototype_results/attacks/pgd/adversarial/pgd.png
+gsr_pgd_gui/prototype_results/attacks/pgd/perturbation/pgd_perturbation.png
+gsr_pgd_gui/prototype_results/evaluations/gsr/lightshed/clean_images/gsr.png
+gsr_pgd_gui/prototype_results/evaluations/gsr/lightshed/detection_analytics_20260729_020610.csv
+gsr_pgd_gui/prototype_results/evaluations/gsr/lightshed/detection_statistics_20260729_020610.txt
+gsr_pgd_gui/prototype_results/evaluations/gsr/trufor/gsr.png.npz
+gsr_pgd_gui/prototype_results/evaluations/gsr/trufor/maps/gsr.png
+gsr_pgd_gui/prototype_results/evaluations/gsr/trufor/overlays/gsr.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/denoised_images/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/detection_analytics_20260729_020601.csv
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/detection_statistics_20260729_020601.txt
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/poison_patterns/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/poisoned_images/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/trufor/maps/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/trufor/overlays/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/trufor/pgd.png.npz
+gsr_pgd_gui/prototype_results/original/original.png
+gsr_pgd_gui/prototype_results/attacks/pgd/adversarial/pgd.png
+gsr_pgd_gui/prototype_results/attacks/pgd/perturbation/pgd_perturbation.png
+gsr_pgd_gui/prototype_results/evaluations/gsr/lightshed/clean_images/gsr.png
+gsr_pgd_gui/prototype_results/evaluations/gsr/lightshed/detection_analytics_20260729_020610.csv
+gsr_pgd_gui/prototype_results/evaluations/gsr/lightshed/detection_statistics_20260729_020610.txt
+gsr_pgd_gui/prototype_results/evaluations/gsr/trufor/gsr.png.npz
+gsr_pgd_gui/prototype_results/evaluations/gsr/trufor/maps/gsr.png
+gsr_pgd_gui/prototype_results/evaluations/gsr/trufor/overlays/gsr.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/denoised_images/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/detection_analytics_20260729_020601.csv
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/detection_statistics_20260729_020601.txt
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/poison_patterns/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/lightshed/poisoned_images/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/trufor/maps/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/trufor/overlays/pgd.png
+gsr_pgd_gui/prototype_results/evaluations/pgd/trufor/pgd.png.npz
+gsr_pgd_gui/prototype_results/original/original.png

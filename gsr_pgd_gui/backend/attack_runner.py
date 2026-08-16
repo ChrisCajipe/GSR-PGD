@@ -56,6 +56,42 @@ DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
+def clear_session_outputs():
+    """
+    Clear all generated outputs from the previous session.
+    Directories themselves are preserved.
+    """
+
+    output_dirs = [
+        ORIGINAL_DIR,
+
+        PGD_ADV_DIR,
+        GSR_ADV_DIR,
+
+        PGD_PERT_DIR,
+        GSR_PERT_DIR,
+
+        PGD_LIGHTSHED_DIR,
+        GSR_LIGHTSHED_DIR,
+
+        PGD_TRUFOR_DIR,
+        GSR_TRUFOR_DIR,
+    ]
+
+    for directory in output_dirs:
+        directory = Path(directory)
+
+        # Create directory if it does not exist
+        directory.mkdir(parents=True, exist_ok=True)
+
+        # Delete everything inside the directory
+        for item in directory.iterdir():
+            if item.is_file() or item.is_symlink():
+                item.unlink()
+            elif item.is_dir():
+                import shutil
+                shutil.rmtree(item)
+
 weights = ResNet50_Weights.IMAGENET1K_V2
 
 model = resnet50(
@@ -75,6 +111,7 @@ def generate_attacks(
     and return everything needed by the GUI.
     """
 
+    clear_session_outputs()
     image = image.to(DEVICE)
 
     #
