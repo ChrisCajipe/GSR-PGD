@@ -17,16 +17,17 @@ from config import (
     TRUFOR_DIR,
     MIXED_DIR,
     MODE,
-    EVALUATION
+    EVALUATION,
+    SPLITS_FILE,
+    TUNING_SIZE,
+    SPLIT_SEED,
+    EVAL_DIR,
+    TOTAL_IMAGES
 )
 
-from dataset.laion_loader import load_laion
-
 from utils.preprocessing import preprocess_image
-from utils.imagenet_labels import is_dog
 from utils.visualization import save_image
-from utils.dataset_builder import create_mixed_dataset, split_dataset
-from utils.create_folders import create_directories
+from utils.dataset_builder import create_mixed_dataset, split_dataset, build_evaluation_folder, save_split_ids, load_evaluation_ids
 
 from attacks.pgd import targeted_pgd
 from attacks.gsr_pgd import gsr_pgd
@@ -65,11 +66,22 @@ def generate_attacks(
     max_iterations=MAX_ITERATIONS,
     sigma=SIGMA,
     lambda_reg=LAMBDA,
-    attack=ATTACK
+    attack=ATTACK,
+    tuning_size=100,
+    seed=42,
+    total_images=TOTAL_IMAGES
     ):
 
-    # INITIALIZATION
     model = load_resnet()
+    dataset = list(dataset)  # needed so indices from split_dataset are usable
+
+    dataset = dataset[:total_images]
+
+    tuning_indices, evaluation_indices = split_dataset(dataset, tuning_size=TUNING_SIZE, seed=SPLIT_SEED    )
+    tuning_ids = {dataset[i]["image_id"] for i in tuning_indices}
+    evaluation_ids = {dataset[i]["image_id"] for i in evaluation_indices}
+    save_split_ids(tuning_ids, evaluation_ids, SPLITS_FILE)
+
 
     count = 0
     success = 0
@@ -129,7 +141,7 @@ def generate_attacks(
 
         print(f"{sample['image_id']} | "f"Success {success}/{count}")
 
-        if count >= MAX_IMAGES:
+        if count >= TOTAL_IMAGES:
             break
 
     return count, success
@@ -145,44 +157,36 @@ def evaluate_defenses(attack=ATTACK):
     print(f"RUNNING {MODE.upper()} {EVALUATION.upper()} {attack.upper()} DEFENSE EVALUATION")
     print("=" * 60)
 
+    evaluation_ids = load_evaluation_ids(SPLITS_FILE)
+
     if EVALUATION == "untampered":
         input_folder = ORIGINAL_DIR
-        labels = [
-            0
-            for _ in input_folder.glob("*.png")
-        ]
-
+        build_evaluation_folder(ORIGINAL_DIR, EVAL_DIR, evaluation_ids, "_original")
+        input_folder = EVAL_DIR
+        labels = [0 for _ in input_folder.glob("*.png")]
 
     elif EVALUATION == "tampered":
-        input_folder = ADV_DIR
-        labels = [
-            1
-            for _ in input_folder.glob("*.png")
-        ]
-
+        build_evaluation_folder(ADV_DIR, EVAL_DIR, evaluation_ids, "_adv")
+        input_folder = EVAL_DIR
+        labels = [1 for _ in input_folder.glob("*.png")]
 
     elif EVALUATION == "50-50":
-
-        create_mixed_dataset(
-            ORIGINAL_DIR,
-            ADV_DIR,
-            MIXED_DIR
-        )
-
+        create_mixed_dataset(ORIGINAL_DIR, ADV_DIR, MIXED_DIR, valid_ids=evaluation_ids)
         input_folder = MIXED_DIR
-
-        labels = []
-
-        for image in sorted(input_folder.glob("*.png")):
-            if "adv" in image.name:
-                labels.append(1)
-            else:
-                labels.append(0)
+        labels = [1 if "adv" in image.name else 0 for image in sorted(input_folder.glob("*.png"))]
 
     else:
-        raise ValueError(
-            "Invalid evaluation mode"
-        )
+        raise ValueError("Invalid evaluation mode")
+
+    # --- fail fast, before wasting time on lightshed/trufor ---
+    actual_count = len(list(input_folder.glob("*.png")))
+    assert actual_count == len(evaluation_ids) * (2 if EVALUATION == "50-50" else 1), (
+        f"Expected {len(evaluation_ids)} evaluation images "
+        f"({'x2 for 50-50' if EVALUATION == '50-50' else ''}), "
+        f"but input_folder has {actual_count}. "
+        f"Check MAX_IMAGES/TUNING_SIZE generation counts."
+    )
+    print(f"✓ Evaluation set verified: {actual_count} images")
 
 
     # ACTUAL START OF EVALUATION

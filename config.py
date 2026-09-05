@@ -21,14 +21,17 @@ EVALUATION = "tampered"
 # ==========================
 # Attack
 # ==========================
-ATTACK = "gsr"
+ATTACK = "pgd"
 # "pgd" or "gsr"
 
 
 # ==========================
 # Dataset
 # ==========================
-MAX_IMAGES = 1000       # DEFAULT: 1000
+MAX_IMAGES = 1000   # size of the EVALUATION split
+TUNING_SIZE = 100   # size of the TUNING split
+TOTAL_IMAGES = MAX_IMAGES + TUNING_SIZE   # 1100, what generate_attacks should produce
+
 IMAGE_SIZE = (512, 512)
 
 # ==========================
@@ -68,6 +71,18 @@ RESULTS_ROOT = PROJECT_ROOT / "results"
 # permanent dataset
 ORIGINAL_DIR = RESULTS_ROOT / "original"
 
+# --------------------------
+# Train/tuning vs evaluation split
+# --------------------------
+# Persisted mapping of which image_ids belong to hyperparameter-tuning
+# vs final evaluation. Lives at the dataset level (not per-attack/per-mode)
+# since the same original/adv images get reused across ATTACK and EVALUATION configs.
+SPLITS_FILE = RESULTS_ROOT / "splits.json"
+
+TUNING_SIZE = 100   # number of images reserved for hyperparameter tuning
+SPLIT_SEED = 42
+
+
 
 # generated attacks
 ATTACK_DIR = (
@@ -105,6 +120,12 @@ MIXED_DIR = (
     / "mixed"
 )
 
+# filtered, evaluation-split-only copies of ORIGINAL_DIR/ADV_DIR
+# used for "untampered" and "tampered" EVALUATION modes
+EVAL_DIR = (
+    EVALUATION_DIR
+    / "eval_only"
+)
 
 # ==========================
 # LightShed Repository

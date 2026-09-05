@@ -3,10 +3,8 @@ from torchvision.models import resnet50, ResNet50_Weights
 from utils.preprocessing import preprocess_image, normalize_image
 from pathlib import Path
 from PIL import Image
-from config import (
-    ADV_DIR,
-    PERSIAN_CAT
-)
+from config import ADV_DIR, PERSIAN_CAT, SPLITS_FILE
+from utils.dataset_builder import load_evaluation_ids, filter_by_ids
 
 DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,8 +38,16 @@ def evaluate_resnet():
     print("\nRunning ResNet-50 evaluation...")
 
     model = load_resnet()
-    adv_images = list(ADV_DIR.glob("*.png"))
-    print(f"Found {len(adv_images)} adversarial images")
+
+    evaluation_ids = load_evaluation_ids(SPLITS_FILE)
+
+    adv_images = filter_by_ids(
+        sorted(ADV_DIR.glob("*.png")),
+        evaluation_ids,
+        "_adv"
+    )
+
+    print(f"Found {len(adv_images)} adversarial images (evaluation partition)")
 
     total = 0
     successful = 0
@@ -49,13 +55,11 @@ def evaluate_resnet():
     for image_path in adv_images:
 
         image = preprocess_image(Image.open(image_path))
-        prediction_id, _ = predict_image(model,image)
+        prediction_id, _ = predict_image(model, image)
         total += 1
 
         if prediction_id == PERSIAN_CAT:
             successful += 1
-
-    
 
     return {
         "images": total,
