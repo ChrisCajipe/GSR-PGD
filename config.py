@@ -12,7 +12,7 @@ MODE = "full"
 # ==========================
 # EVALUATION
 # ==========================
-EVALUATION = "tampered"
+EVALUATION = "50-50"
 # Options
 # "untampered" = all clean images
 # "tampered" = all config-based attack tampered images 
@@ -21,7 +21,7 @@ EVALUATION = "tampered"
 # ==========================
 # Attack
 # ==========================
-ATTACK = "pgd"
+ATTACK = "gsr"
 # "pgd" or "gsr"
 
 

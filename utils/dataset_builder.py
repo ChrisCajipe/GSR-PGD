@@ -47,7 +47,7 @@ def load_evaluation_ids(path):
         data = json.load(f)
     return set(data["evaluation_ids"])
 
-def create_mixed_dataset(original_dir, adversarial_dir, mixed_dir, valid_ids=None):
+def create_mixed_dataset(original_dir, adversarial_dir, mixed_dir, valid_ids=None, seed=42):
     original_dir = Path(original_dir)
     adversarial_dir = Path(adversarial_dir)
     mixed_dir = Path(mixed_dir)
@@ -56,16 +56,26 @@ def create_mixed_dataset(original_dir, adversarial_dir, mixed_dir, valid_ids=Non
     for file in mixed_dir.glob("*"):
         file.unlink()
 
-    original_images = sorted(original_dir.glob("*.png"))
-    adversarial_images = sorted(adversarial_dir.glob("*.png"))
-
     if valid_ids is not None:
-        original_images = filter_by_ids(original_images, valid_ids, "_original")
-        adversarial_images = filter_by_ids(adversarial_images, valid_ids, "_adv")
+        # split the evaluation ids themselves in half:
+        # one half becomes "untampered" samples, the other half "tampered" samples
+        ids = sorted(valid_ids)
+        random.seed(seed)
+        random.shuffle(ids)
 
-    count = min(len(original_images), len(adversarial_images))
-    original_images = original_images[:count]
-    adversarial_images = adversarial_images[:count]
+        half = len(ids) // 2
+        original_ids = set(ids[:half])
+        adversarial_ids = set(ids[half:])
+
+        original_images = filter_by_ids(
+            sorted(original_dir.glob("*.png")), original_ids, "_original"
+        )
+        adversarial_images = filter_by_ids(
+            sorted(adversarial_dir.glob("*.png")), adversarial_ids, "_adv"
+        )
+    else:
+        original_images = sorted(original_dir.glob("*.png"))
+        adversarial_images = sorted(adversarial_dir.glob("*.png"))
 
     labels = []
     for image in original_images:

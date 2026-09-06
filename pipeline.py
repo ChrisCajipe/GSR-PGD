@@ -180,9 +180,9 @@ def evaluate_defenses(attack=ATTACK):
 
     # --- fail fast, before wasting time on lightshed/trufor ---
     actual_count = len(list(input_folder.glob("*.png")))
-    assert actual_count == len(evaluation_ids) * (2 if EVALUATION == "50-50" else 1), (
-        f"Expected {len(evaluation_ids)} evaluation images "
-        f"({'x2 for 50-50' if EVALUATION == '50-50' else ''}), "
+    expected_count = len(evaluation_ids)   # same total regardless of mode now
+    assert actual_count == expected_count, (
+        f"Expected {expected_count} evaluation images, "
         f"but input_folder has {actual_count}. "
         f"Check MAX_IMAGES/TUNING_SIZE generation counts."
     )
