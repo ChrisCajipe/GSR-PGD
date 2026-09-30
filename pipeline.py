@@ -69,8 +69,8 @@ def generate_attacks(
     sigma=SIGMA,
     lambda_reg=LAMBDA,
     attack=ATTACK,
-    tuning_size=100,
-    seed=42,
+    tuning_size=TUNING_SIZE,
+    seed=SPLIT_SEED,
     total_images=TOTAL_IMAGES
     ):
 
@@ -79,10 +79,27 @@ def generate_attacks(
 
     dataset = dataset[:total_images]
 
-    tuning_indices, evaluation_indices = split_dataset(dataset, tuning_size=TUNING_SIZE, seed=SPLIT_SEED    )
-    tuning_ids = {dataset[i]["image_id"] for i in tuning_indices}
-    evaluation_ids = {dataset[i]["image_id"] for i in evaluation_indices}
-    save_split_ids(tuning_ids, evaluation_ids, SPLITS_FILE)
+    tuning_indices, evaluation_indices = split_dataset(
+        dataset,
+        tuning_size=tuning_size,
+        seed=seed,
+    )
+
+    tuning_ids = [
+        dataset[i]["image_id"]
+        for i in tuning_indices
+    ]
+
+    evaluation_ids = [
+        dataset[i]["image_id"]
+        for i in evaluation_indices
+    ]
+
+    save_split_ids(
+        tuning_ids,
+        evaluation_ids,
+        SPLITS_FILE,
+    )
 
 
     count = 0
@@ -164,7 +181,7 @@ def generate_attacks(
             f"{attack.upper()} Generation Time: {elapsed_time_ms:.2f} ms"
         )
 
-        if count >= TOTAL_IMAGES:
+        if count >= total_images:
             break
 
     average_attack_time_ms = (

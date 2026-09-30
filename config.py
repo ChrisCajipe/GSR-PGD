@@ -51,7 +51,7 @@ MAX_ITERATIONS = 10
 # ==========================
 # GSR
 # ==========================
-SIGMA = 0.03            # VARIANCE (STRENGTH OF GSR)    (MOST OPTIMAL)
+SIGMA = 0.03            # STANDARD DEVIATION (STRENGTH OF GSR)    (MOST OPTIMAL)
 LAMBDA = 0.75            # WEIGHT OF GSR                 (MOST OPTIMAL)
 
 
