@@ -63,6 +63,7 @@ class UploadPanel(QWidget):
         self.generateButton.setCursor(Qt.PointingHandCursor)
         self.generateButton.clicked.connect(self.generate_attack)
         root.addWidget(self.generateButton)
+        self._build_loading_overlay()
 
     # ------------------------------------------------------------------
     # UI builders
@@ -212,6 +213,82 @@ class UploadPanel(QWidget):
         """)
         return line
 
+    def _build_loading_overlay(self):
+        self.loadingOverlay = QFrame(self)
+
+        self.loadingOverlay.setStyleSheet("""
+            QFrame {
+                background-color: rgba(255, 255, 255, 245);
+            }
+        """)
+
+        overlay_layout = QVBoxLayout(self.loadingOverlay)
+        overlay_layout.setAlignment(Qt.AlignCenter)
+
+        card = QFrame()
+        card.setFixedWidth(500)
+
+        card.setStyleSheet("""
+            QFrame {
+                background: #f6f6f6;
+                border: 1px solid #616a96;
+                border-radius: 16px;
+            }
+        """)
+
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(40, 35, 40, 35)
+        card_layout.setSpacing(18)
+
+        title = QLabel("PROCESSING IMAGE")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: 900;
+            color: #1d3195;
+            border: none;
+        """)
+
+        self.loadingStatusLabel = QLabel("Preparing...")
+        self.loadingStatusLabel.setAlignment(Qt.AlignCenter)
+        self.loadingStatusLabel.setStyleSheet("""
+            font-size: 13px;
+            color: #616a96;
+            border: none;
+        """)
+
+        card_layout.addWidget(title)
+        card_layout.addWidget(self.loadingStatusLabel)
+        card_layout.addSpacing(10)
+
+        self.loadingStageLabels = {}
+
+        stages = [
+            ("adversarial_generation", "Adversarial Generation"),
+            ("resnet_classification", "ResNet-50 Classification"),
+            ("lightshed_simulation", "LightShed Simulation"),
+            ("trufor_simulation", "TruFor Simulation"),
+        ]
+
+        for key, text in stages:
+
+            label = QLabel(f"○   {text}")
+
+            label.setStyleSheet("""
+                font-size: 14px;
+                font-weight: 700;
+                color: #9a9db0;
+                padding: 8px;
+                border: none;
+            """)
+
+            self.loadingStageLabels[key] = label
+            card_layout.addWidget(label)
+
+        overlay_layout.addWidget(card)
+
+        self.loadingOverlay.hide()
+
     # ------------------------------------------------------------------
     # Drag & drop plumbing (UI only -- delegates to upload_image)
     # ------------------------------------------------------------------
@@ -279,6 +356,9 @@ class UploadPanel(QWidget):
         if hasattr(self, "uploadedImage"):
             self._display_image(self.uploadedImage)
 
+        if hasattr(self, "loadingOverlay"):
+            self.loadingOverlay.setGeometry(self.rect())
+
     def verify_image(self):
 
         self.originalPredictionLabel.setText("Verifying...")
@@ -296,6 +376,68 @@ class UploadPanel(QWidget):
             f"{class_name}\n({confidence*100:.2f}%)"
         )
 
+    def update_loading_stage(self, current_stage):
+        stages = [
+            "adversarial_generation",
+            "resnet_classification",
+            "lightshed_simulation",
+            "trufor_simulation",
+        ]
+
+        stage_names = {
+            "adversarial_generation": "Generating adversarial images...",
+            "resnet_classification": "Classifying with ResNet-50...",
+            "lightshed_simulation": "Running LightShed simulation...",
+            "trufor_simulation": "Running TruFor simulation...",
+        }
+
+        current_index = stages.index(current_stage)
+
+        self.loadingStatusLabel.setText(
+            stage_names[current_stage]
+        )
+
+        for index, stage in enumerate(stages):
+
+            label = self.loadingStageLabels[stage]
+
+            name = {
+                "adversarial_generation": "Adversarial Generation",
+                "resnet_classification": "ResNet-50 Classification",
+                "lightshed_simulation": "LightShed Simulation",
+                "trufor_simulation": "TruFor Simulation",
+            }[stage]
+
+            if index < current_index:
+                label.setText(f"✓   {name}")
+                label.setStyleSheet("""
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #2e8b57;
+                    padding: 8px;
+                    border: none;
+                """)
+
+            elif index == current_index:
+                label.setText(f"●   {name}")
+                label.setStyleSheet("""
+                    font-size: 14px;
+                    font-weight: 800;
+                    color: #1d3195;
+                    padding: 8px;
+                    border: none;
+                """)
+
+            else:
+                label.setText(f"○   {name}")
+                label.setStyleSheet("""
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #9a9db0;
+                    padding: 8px;
+                    border: none;
+                """)
+
     def generate_attack(self):
         if not hasattr(self, "uploadedImage"):
             QMessageBox.warning(
@@ -311,6 +453,28 @@ class UploadPanel(QWidget):
             "Generating... Please Wait..."
         )
         self.generateButton.setEnabled(False)
+        self.loadingOverlay.setGeometry(self.rect())
+        self.loadingOverlay.show()
+        self.loadingOverlay.raise_()
+
+        self.loadingStatusLabel.setText("Preparing algorithm...")
+
+        for stage, label in self.loadingStageLabels.items():
+            name = {
+                "adversarial_generation": "Adversarial Generation",
+                "resnet_classification": "ResNet-50 Classification",
+                "lightshed_simulation": "LightShed Simulation",
+                "trufor_simulation": "TruFor Simulation",
+            }[stage]
+
+            label.setText(f"○   {name}")
+            label.setStyleSheet("""
+                font-size: 14px;
+                font-weight: 700;
+                color: #9a9db0;
+                padding: 8px;
+                border: none;
+            """)
 
 
         target_name = self.targetClassCombo.currentText()
@@ -333,12 +497,14 @@ class UploadPanel(QWidget):
             self.worker.run
         )
 
+        self.worker.stageChanged.connect(
+            self.update_loading_stage
+        )
 
         # When finished
         self.worker.finished.connect(
             self.attack_finished
         )
-
 
         self.worker.error.connect(
             self.attack_error
@@ -354,6 +520,9 @@ class UploadPanel(QWidget):
             self.worker.deleteLater
         )
 
+        self.worker.error.connect(self.thread.quit)
+        self.worker.error.connect(self.worker.deleteLater)
+
         self.thread.finished.connect(
             self.thread.deleteLater
         )
@@ -362,6 +531,7 @@ class UploadPanel(QWidget):
         self.thread.start()
 
     def attack_finished(self, results):
+        self.loadingOverlay.hide()
         self.pgdImage = results["pgd"]
         self.gsrImage = results["gsr"]
 
@@ -385,6 +555,7 @@ class UploadPanel(QWidget):
         self.generateButton.setEnabled(True)
 
     def attack_error(self, error):
+        self.loadingOverlay.hide()
         QMessageBox.critical(
             self,
             "Attack Failed",

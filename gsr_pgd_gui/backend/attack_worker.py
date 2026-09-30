@@ -5,6 +5,9 @@ class AttackWorker(QObject):
     finished = Signal(dict)
     error = Signal(str)
 
+    # NEW: sends the current stage name to the UI
+    stageChanged = Signal(str)
+
     def __init__(self, image, target_class):
         super().__init__()
 
@@ -17,7 +20,8 @@ class AttackWorker(QObject):
 
             results = generate_attacks(
                 image=self.image,
-                target_class=self.target_class
+                target_class=self.target_class,
+                progress_callback=self.stageChanged.emit
             )
 
             self.finished.emit(results)

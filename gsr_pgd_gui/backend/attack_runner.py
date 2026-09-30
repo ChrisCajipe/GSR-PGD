@@ -104,19 +104,22 @@ model.eval()
 def generate_attacks(
     image,
     target_class,
+    progress_callback=None,
 ):
     """
     Generate both PGD and GSR-PGD attacks,
     evaluate them,
     and return everything needed by the GUI.
     """
+    def report(stage):
+        if progress_callback:
+            progress_callback(stage)
 
     clear_session_outputs()
     image = image.to(DEVICE)
 
-    #
-    # Generate attacks
-    #
+    # 1. ADVERSARIAL GENERATION
+    report("adversarial_generation")
 
     pgd_image, pgd_iterations = targeted_pgd(
         model=model,
@@ -137,6 +140,9 @@ def generate_attacks(
         sigma=SIGMA,
         lambda_reg=LAMBDA,
     )
+
+    # 2. RESNET-50 CLASSIFICATION
+    report("resnet_classification")
 
     pgd_prediction, pgd_conf = predict_tensor(pgd_image)
     gsr_prediction, gsr_conf = predict_tensor(gsr_image)
@@ -189,6 +195,9 @@ def generate_attacks(
     # Evaluate with LightShed
     #
 
+    # 3. LIGHTSHED
+    report("lightshed_simulation")
+
     pgd_lightshed_path = run_lightshed(
         PGD_ADV_DIR,
         PGD_LIGHTSHED_DIR,
@@ -210,6 +219,10 @@ def generate_attacks(
     #
     # Evaluate with TruFor
     #
+
+    # 4. TRUFOR
+    report("trufor_simulation")
+    
     pgd_trufor = run_trufor(
         PGD_ADV_DIR,
         PGD_TRUFOR_DIR,
