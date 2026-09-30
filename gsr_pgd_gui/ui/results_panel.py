@@ -327,15 +327,55 @@ class ResultsPanel(QWidget):
             return None
 
         return pixmap
+
+    def clear_results(self):
+        """Clear images from the previous run."""
+
+        image_labels = [
+            # Main views
+            self.gsrImageLabel,
+            self.pgdImageLabel,
+            self.originalResultImageLabel,
+
+            # Perturbations
+            self.gsrPerturbationLabel,
+            self.pgdPerturbationLabel,
+
+            # Evaluation Output
+            self.heatmapPanel.lightshedHeatmapPgdLabel,
+            self.heatmapPanel.lightshedHeatmapGsrLabel,
+            self.heatmapPanel.truforHeatmapPgdLabel,
+            self.heatmapPanel.truforHeatmapGsrLabel,
+
+            # Overall
+            self.overallGsrAdversarialLabel,
+            self.overallPgdAdversarialLabel,
+            self.overallGsrPerturbationLabel,
+            self.overallPgdPerturbationLabel,
+            self.overallGsrLightShedLabel,
+            self.overallPgdLightShedLabel,
+            self.overallGsrTruForLabel,
+            self.overallPgdTruForLabel,
+        ]
+
+        for label in image_labels:
+            label.clear()
+            label.setText("No Image")
+            label.setStyleSheet("")
+
+        if hasattr(self, "results"):
+            del self.results
     
     def load_results(self, results):
-        """
-        Receive attack results from the backend and display them.
-        """
         print("Results received!")
+
+        # Remove anything displayed from the previous run
+        self.clear_results()
+
+        # Store new results
         self.results = results
 
-        # update every view
+        # Display new results
         self.compare_results()
     
     def compare_results(self, view_index: int = None):
