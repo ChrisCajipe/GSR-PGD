@@ -3,7 +3,7 @@ from pathlib import Path
 # ==========================
 # MODE OF EXPERIMENTATION
 # ==========================
-MODE = "full"
+MODE = "attack"
 # Options:
 # "attack"   = generate adversarial images only
 # "evaluate" = evaluate existing adversarial images only
@@ -12,7 +12,7 @@ MODE = "full"
 # ==========================
 # EVALUATION
 # ==========================
-EVALUATION = "50-50"
+EVALUATION = "tampered"
 # Options
 # "untampered" = all clean images
 # "tampered" = all config-based attack tampered images 

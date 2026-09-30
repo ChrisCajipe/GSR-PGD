@@ -53,6 +53,8 @@ from config import EVALUATION
 from evaluation.metrics import calculate_binary_metrics
 from evaluation.image_quality import evaluate_image_quality
 from PIL import Image
+import time
+import torch
 
 
 # ==========================================================
@@ -85,6 +87,8 @@ def generate_attacks(
 
     count = 0
     success = 0
+    total_attack_time_ms = 0.0
+
 
     print("=" * 60)
     print(f"GENERATING {MODE.upper()} {EVALUATION.upper()} {attack.upper()} ATTACK")
@@ -94,9 +98,7 @@ def generate_attacks(
     for sample in dataset:
 
         # PREPROCESSING
-        image = preprocess_image(
-            sample["image"]
-        )
+        image = preprocess_image(sample["image"])
 
         # IMAGE CLASSIFICATION
         prediction_id, prediction_name = predict_image(
@@ -105,6 +107,13 @@ def generate_attacks(
         )
 
         # ATTACK
+
+        # Synchronize GPU before timing
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+
+        start_time = time.perf_counter()
+
         if attack == "pgd":
             adv_image, iterations = targeted_pgd(
                 model=model,
@@ -114,7 +123,6 @@ def generate_attacks(
                 alpha=alpha,
                 max_iterations=max_iterations,
             )
-
 
         elif attack == "gsr":
             adv_image, iterations = gsr_pgd(
@@ -128,6 +136,17 @@ def generate_attacks(
                 lambda_reg=lambda_reg,
             )
 
+        else:
+            raise ValueError(f"Unknown attack: {attack}")
+
+        # Wait for CUDA operations to actually finish
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+
+        elapsed_time_ms = (time.perf_counter() - start_time) * 1000
+
+        total_attack_time_ms += elapsed_time_ms
+
         # SAVE IMAGE
         save_image(image, ORIGINAL_DIR / f"{sample['image_id']}_original.png")
         save_image(adv_image, ADV_DIR / f"{sample['image_id']}_adv.png")
@@ -139,13 +158,29 @@ def generate_attacks(
         if adv_prediction_id == PERSIAN_CAT:
             success += 1
 
-        print(f"{sample['image_id']} | "f"Success {success}/{count}")
+        print(
+            f"{sample['image_id']} | "
+            f"Success {success}/{count} | "
+            f"{attack.upper()} Generation Time: {elapsed_time_ms:.2f} ms"
+        )
 
         if count >= TOTAL_IMAGES:
             break
 
-    return count, success
+    average_attack_time_ms = (
+        total_attack_time_ms / count
+        if count > 0
+        else 0.0
+    )
 
+    print("\n" + "-" * 60)
+    print(f"{attack.upper()} ATTACK GENERATION TIME")
+    print("-" * 60)
+    print(f"Total Time   : {total_attack_time_ms:.2f} ms")
+    print(f"Average Time : {average_attack_time_ms:.2f} ms/image")
+    print("-" * 60)
+
+    return count, success, average_attack_time_ms
 
 # ==========================================================
 # EVALUATION

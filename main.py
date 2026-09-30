@@ -11,7 +11,7 @@ print("STARTING...")
 dataset = load_laion()
 
 if MODE == "attack":
-    count, success = generate_attacks(dataset=dataset)
+    count, success, average_attack_time_ms = generate_attacks(dataset=dataset)
 
 elif MODE == "evaluate":
     resnet_results, quality_results, lightshed_results, trufor_results = evaluate_defenses()
@@ -19,7 +19,7 @@ elif MODE == "evaluate":
 
 
 elif MODE == "full":
-    count, success = generate_attacks(dataset=dataset)
+    count, success, average_attack_time_ms = generate_attacks(dataset=dataset)
     resnet_results, quality_results, lightshed_results, trufor_results = evaluate_defenses()
     print_defense_summary(resnet_results, quality_results, lightshed_results, trufor_results)
 
