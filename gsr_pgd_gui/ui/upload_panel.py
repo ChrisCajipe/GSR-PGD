@@ -376,7 +376,14 @@ class UploadPanel(QWidget):
             f"{class_name}\n({confidence*100:.2f}%)"
         )
 
+    def _format_time(self, elapsed_ms):
+        if elapsed_ms >= 1000:
+            return f"{elapsed_ms / 1000:.2f} s"
+
+        return f"{elapsed_ms:.2f} ms"
+
     def update_loading_stage(self, current_stage):
+
         stages = [
             "adversarial_generation",
             "resnet_classification",
@@ -391,6 +398,13 @@ class UploadPanel(QWidget):
             "trufor_simulation": "Running TruFor simulation...",
         }
 
+        display_names = {
+            "adversarial_generation": "Adversarial Generation",
+            "resnet_classification": "ResNet-50 Classification",
+            "lightshed_simulation": "LightShed Simulation",
+            "trufor_simulation": "TruFor Simulation",
+        }
+
         current_index = stages.index(current_stage)
 
         self.loadingStatusLabel.setText(
@@ -400,16 +414,27 @@ class UploadPanel(QWidget):
         for index, stage in enumerate(stages):
 
             label = self.loadingStageLabels[stage]
+            name = display_names[stage]
 
-            name = {
-                "adversarial_generation": "Adversarial Generation",
-                "resnet_classification": "ResNet-50 Classification",
-                "lightshed_simulation": "LightShed Simulation",
-                "trufor_simulation": "TruFor Simulation",
-            }[stage]
-
+            # Previous stages = completed
             if index < current_index:
-                label.setText(f"✓   {name}")
+
+                timings = self.stageElapsed.get(stage, {})
+
+                pgd_time = timings.get("pgd")
+                gsr_time = timings.get("gsr")
+
+                if pgd_time is not None and gsr_time is not None:
+
+                    label.setText(
+                        f"✓   {name}\n"
+                        f"     PGD: {self._format_time(pgd_time)}   |   "
+                        f"GSR-PGD: {self._format_time(gsr_time)}"
+                    )
+
+                else:
+                    label.setText(f"✓   {name}")
+
                 label.setStyleSheet("""
                     font-size: 14px;
                     font-weight: 700;
@@ -418,8 +443,11 @@ class UploadPanel(QWidget):
                     border: none;
                 """)
 
+            # Current stage
             elif index == current_index:
+
                 label.setText(f"●   {name}")
+
                 label.setStyleSheet("""
                     font-size: 14px;
                     font-weight: 800;
@@ -428,8 +456,11 @@ class UploadPanel(QWidget):
                     border: none;
                 """)
 
+            # Future stages
             else:
+
                 label.setText(f"○   {name}")
+
                 label.setStyleSheet("""
                     font-size: 14px;
                     font-weight: 700;
@@ -447,6 +478,7 @@ class UploadPanel(QWidget):
             )
             return
 
+        self.stageElapsed = {}
 
         # Update UI immediately
         self.generateButton.setText(
@@ -499,6 +531,10 @@ class UploadPanel(QWidget):
 
         self.worker.stageChanged.connect(
             self.update_loading_stage
+        )
+
+        self.worker.stageCompleted.connect(
+            self.complete_loading_stage
         )
 
         # When finished
@@ -554,6 +590,78 @@ class UploadPanel(QWidget):
 
         self.generateButton.setEnabled(True)
 
+    def complete_loading_stage(
+        self,
+        stage,
+        elapsed_ms,
+        variant
+    ):
+
+        # Create dictionary for stage if it doesn't exist
+        if stage not in self.stageElapsed:
+            self.stageElapsed[stage] = {}
+
+        # Store PGD or GSR timing
+        self.stageElapsed[stage][variant] = elapsed_ms
+
+        names = {
+            "adversarial_generation": "Adversarial Generation",
+            "resnet_classification": "ResNet-50 Classification",
+            "lightshed_simulation": "LightShed Simulation",
+            "trufor_simulation": "TruFor Simulation",
+        }
+
+        label = self.loadingStageLabels[stage]
+
+        pgd_time = self.stageElapsed[stage].get("pgd")
+        gsr_time = self.stageElapsed[stage].get("gsr")
+
+        # Both PGD and GSR-PGD finished
+        if pgd_time is not None and gsr_time is not None:
+
+            label.setText(
+                f"✓   {names[stage]}\n"
+                f"     PGD: {self._format_time(pgd_time)}   |   "
+                f"GSR-PGD: {self._format_time(gsr_time)}"
+            )
+
+            label.setStyleSheet("""
+                font-size: 14px;
+                font-weight: 700;
+                color: #2e8b57;
+                padding: 8px;
+                border: none;
+            """)
+
+        # Only one of the two has finished
+        else:
+
+            pgd_text = (
+                self._format_time(pgd_time)
+                if pgd_time is not None
+                else "..."
+            )
+
+            gsr_text = (
+                self._format_time(gsr_time)
+                if gsr_time is not None
+                else "..."
+            )
+
+            label.setText(
+                f"●   {names[stage]}\n"
+                f"     PGD: {pgd_text}   |   "
+                f"GSR-PGD: {gsr_text}"
+            )
+
+            label.setStyleSheet("""
+                font-size: 14px;
+                font-weight: 800;
+                color: #1d3195;
+                padding: 8px;
+                border: none;
+            """)
+        
     def attack_error(self, error):
         self.loadingOverlay.hide()
         QMessageBox.critical(

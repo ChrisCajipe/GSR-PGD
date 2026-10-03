@@ -74,6 +74,38 @@ class MetricsPanel(QFrame):
         self.truforStatusLabel = self.truforStatusGsrLabel  # generic alias
 
         outer.addStretch(1)
+       
+        # ---- Processing Time ---------------------------------------
+        outer.addWidget(self._section_caption("PROCESSING TIME"))
+
+        timing_frame, timing_rows = self._build_table(
+            row_labels=[
+                "ADVERSARIAL GENERATION",
+                "RESNET-50 CLASSIFICATION",
+                "LIGHTSHED SIMULATION",
+                "TRUFOR SIMULATION",
+            ]
+        )
+
+        outer.addWidget(timing_frame)
+
+        self.adversarialTimePgdLabel, self.adversarialTimeGsrLabel = (
+            timing_rows["ADVERSARIAL GENERATION"]
+        )
+
+        self.resnetTimePgdLabel, self.resnetTimeGsrLabel = (
+            timing_rows["RESNET-50 CLASSIFICATION"]
+        )
+
+        self.lightshedTimePgdLabel, self.lightshedTimeGsrLabel = (
+            timing_rows["LIGHTSHED SIMULATION"]
+        )
+
+        self.truforTimePgdLabel, self.truforTimeGsrLabel = (
+            timing_rows["TRUFOR SIMULATION"]
+        )
+
+        outer.addStretch(1)
 
     # ------------------------------------------------------------------
     def _section_caption(self, text: str) -> QLabel:
@@ -118,7 +150,57 @@ class MetricsPanel(QFrame):
             row_values[name] = (pgd_value, gsr_value)
 
         return frame, row_values
+    def _build_timing_table(self, row_labels):
+        """
+        Builds a 2-column table:
 
+            STAGE | ELAPSED TIME
+        """
+
+        frame = QFrame()
+
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        # Header
+        header_row = QHBoxLayout()
+
+        header_row.addWidget(
+            self._col_label("STAGE", flex=2),
+            stretch=2
+        )
+
+        header_row.addWidget(
+            self._col_label("ELAPSED", flex=1),
+            stretch=1
+        )
+
+        layout.addLayout(header_row)
+        layout.addWidget(self._divider())
+
+        row_values = {}
+
+        for name in row_labels:
+
+            row = QHBoxLayout()
+
+            name_label = QLabel(name)
+            name_label.setObjectName("MetricsRowLabel")
+
+            value_label = QLabel("--")
+            value_label.setObjectName("MetricsValue")
+
+            row.addWidget(name_label, stretch=2)
+            row.addWidget(value_label, stretch=1)
+
+            layout.addLayout(row)
+            layout.addWidget(self._divider())
+
+            row_values[name] = value_label
+
+        return frame, row_values
+    
     def _col_label(self, text: str, flex: int) -> QLabel:
         label = QLabel(text)
         label.setObjectName("MetricsColHeader")

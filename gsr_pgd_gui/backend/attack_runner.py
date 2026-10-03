@@ -1,4 +1,5 @@
 import torch
+import time
 from torchvision.models import (
     resnet50,
     ResNet50_Weights,
@@ -105,21 +106,36 @@ def generate_attacks(
     image,
     target_class,
     progress_callback=None,
+    stage_complete_callback=None
 ):
     """
     Generate both PGD and GSR-PGD attacks,
     evaluate them,
     and return everything needed by the GUI.
     """
+
     def report(stage):
         if progress_callback:
             progress_callback(stage)
 
+    def report_complete(stage, elapsed_ms, variant=None):
+        if stage_complete_callback:
+            stage_complete_callback(stage, elapsed_ms, variant)
+
+    def sync_cuda():
+        if DEVICE.type == "cuda":
+            torch.cuda.synchronize()
+
     clear_session_outputs()
     image = image.to(DEVICE)
 
+    #
     # 1. ADVERSARIAL GENERATION
+    #
     report("adversarial_generation")
+
+    sync_cuda()
+    start = time.perf_counter()
 
     pgd_image, pgd_iterations = targeted_pgd(
         model=model,
@@ -129,6 +145,13 @@ def generate_attacks(
         alpha=ALPHA,
         max_iterations=MAX_ITERATIONS,
     )
+
+    sync_cuda()
+    pgd_adv_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("adversarial_generation", pgd_adv_time_ms, "pgd")
+
+    sync_cuda()
+    start = time.perf_counter()
 
     gsr_image, gsr_iterations = gsr_pgd(
         model=model,
@@ -141,43 +164,41 @@ def generate_attacks(
         lambda_reg=LAMBDA,
     )
 
+    sync_cuda()
+    gsr_adv_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("adversarial_generation", gsr_adv_time_ms, "gsr")
+
+    #
     # 2. RESNET-50 CLASSIFICATION
+    #
     report("resnet_classification")
 
+    sync_cuda()
+    start = time.perf_counter()
     pgd_prediction, pgd_conf = predict_tensor(pgd_image)
+    sync_cuda()
+    pgd_resnet_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("resnet_classification", pgd_resnet_time_ms, "pgd")
+
+    sync_cuda()
+    start = time.perf_counter()
     gsr_prediction, gsr_conf = predict_tensor(gsr_image)
+    sync_cuda()
+    gsr_resnet_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("resnet_classification", gsr_resnet_time_ms, "gsr")
 
     print("PGD Prediction:", pgd_prediction, pgd_conf)
     print("GSR Prediction:", gsr_prediction, gsr_conf)
 
-    pgd_perturbation = create_perturbation(
-        image,
-        pgd_image,
-    )
-
-    gsr_perturbation = create_perturbation(
-        image,
-        gsr_image,
-    )
+    pgd_perturbation = create_perturbation(image, pgd_image)
+    gsr_perturbation = create_perturbation(image, gsr_image)
 
     #
     # Save images
     #
-
-    save_image(
-        image,
-        ORIGINAL_DIR / ORIGINAL_FILENAME,
-    )
-
-    save_image(
-        pgd_image,
-        PGD_ADV_DIR / PGD_FILENAME,
-    )
-
-    save_image(
-        gsr_image,
-        GSR_ADV_DIR / GSR_FILENAME,
-    )
+    save_image(image, ORIGINAL_DIR / ORIGINAL_FILENAME)
+    save_image(pgd_image, PGD_ADV_DIR / PGD_FILENAME)
+    save_image(gsr_image, GSR_ADV_DIR / GSR_FILENAME)
 
     save_perturbation(
         image,
@@ -192,21 +213,25 @@ def generate_attacks(
     )
 
     #
-    # Evaluate with LightShed
-    #
-
     # 3. LIGHTSHED
+    #
     report("lightshed_simulation")
 
+    start = time.perf_counter()
     pgd_lightshed_path = run_lightshed(
         PGD_ADV_DIR,
         PGD_LIGHTSHED_DIR,
     )
+    pgd_lightshed_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("lightshed_simulation", pgd_lightshed_time_ms, "pgd")
 
+    start = time.perf_counter()
     gsr_lightshed_path = run_lightshed(
         GSR_ADV_DIR,
         GSR_LIGHTSHED_DIR,
     )
+    gsr_lightshed_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("lightshed_simulation", gsr_lightshed_time_ms, "gsr")
 
     pgd_lightshed = {
         "extracted_perturbation": pgd_lightshed_path
@@ -217,48 +242,41 @@ def generate_attacks(
     }
 
     #
-    # Evaluate with TruFor
-    #
-
     # 4. TRUFOR
+    #
     report("trufor_simulation")
-    
+
+    start = time.perf_counter()
     pgd_trufor = run_trufor(
         PGD_ADV_DIR,
         PGD_TRUFOR_DIR,
     )
+    pgd_trufor_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("trufor_simulation", pgd_trufor_time_ms, "pgd")
 
+    start = time.perf_counter()
     gsr_trufor = run_trufor(
         GSR_ADV_DIR,
         GSR_TRUFOR_DIR,
     )
+    gsr_trufor_time_ms = (time.perf_counter() - start) * 1000
+    report_complete("trufor_simulation", gsr_trufor_time_ms, "gsr")
 
     #
-    # Return everything
-    #
-
     # DEBUG
+    #
     with torch.no_grad():
         output = model(
             normalize_image(
                 pgd_image.unsqueeze(0)
             )
         )
-
         prediction = output.argmax(dim=1).item()
 
-    print(
-        "Attack model prediction:",
-        weights.meta["categories"][prediction]
-    )
-
-    print(
-        "Target:",
-        weights.meta["categories"][target_class]
-    )
+    print("Attack model prediction:", weights.meta["categories"][prediction])
+    print("Target:", weights.meta["categories"][target_class])
 
     return {
-
         "original": image,
 
         "pgd": pgd_image,
@@ -277,4 +295,23 @@ def generate_attacks(
         "gsr_trufor": gsr_trufor,
 
         "target": target_class,
+
+        "stage_times_ms": {
+            "adversarial_generation": {
+                "pgd": pgd_adv_time_ms,
+                "gsr": gsr_adv_time_ms,
+            },
+            "resnet_classification": {
+                "pgd": pgd_resnet_time_ms,
+                "gsr": gsr_resnet_time_ms,
+            },
+            "lightshed_simulation": {
+                "pgd": pgd_lightshed_time_ms,
+                "gsr": gsr_lightshed_time_ms,
+            },
+            "trufor_simulation": {
+                "pgd": pgd_trufor_time_ms,
+                "gsr": gsr_trufor_time_ms,
+            },
+        }
     }

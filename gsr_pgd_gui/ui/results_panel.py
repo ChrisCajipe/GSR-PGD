@@ -358,6 +358,38 @@ class ResultsPanel(QWidget):
             self.overallPgdTruForLabel,
         ]
 
+        metric_labels = [
+            # General
+            self.metricsPanel.predictionPgdLabel,
+            self.metricsPanel.predictionGsrLabel,
+            self.metricsPanel.psnrPgdLabel,
+            self.metricsPanel.psnrGsrLabel,
+            self.metricsPanel.ssimPgdLabel,
+            self.metricsPanel.ssimGsrLabel,
+
+            # Detection
+            self.metricsPanel.lightshedStatusPgdLabel,
+            self.metricsPanel.lightshedStatusGsrLabel,
+            self.metricsPanel.truforStatusPgdLabel,
+            self.metricsPanel.truforStatusGsrLabel,
+
+            # Processing time
+            self.metricsPanel.adversarialTimePgdLabel,
+            self.metricsPanel.adversarialTimeGsrLabel,
+
+            self.metricsPanel.resnetTimePgdLabel,
+            self.metricsPanel.resnetTimeGsrLabel,
+
+            self.metricsPanel.lightshedTimePgdLabel,
+            self.metricsPanel.lightshedTimeGsrLabel,
+
+            self.metricsPanel.truforTimePgdLabel,
+            self.metricsPanel.truforTimeGsrLabel,
+        ]
+
+        for label in metric_labels:
+            label.setText("--")
+
         for label in image_labels:
             label.clear()
             label.setText("No Image")
@@ -458,7 +490,80 @@ class ResultsPanel(QWidget):
             f"{gsr_ssim:.4f}"
         )
 
-            # PERTURBATION TENSORS
+        # -----------------------------
+        # Processing Time
+        # -----------------------------
+
+        stage_times = self.results.get("stage_times_ms", {})
+
+        def set_time(label, stage, attack):
+            stage_data = stage_times.get(stage, {})
+            value = stage_data.get(attack)
+
+            if value is None:
+                label.setText("--")
+            elif value >= 1000:
+                label.setText(f"{value / 1000:.2f} s")
+            else:
+                label.setText(f"{value:.2f} ms")
+
+
+        # Adversarial generation
+        set_time(
+            self.metricsPanel.adversarialTimePgdLabel,
+            "adversarial_generation",
+            "pgd"
+        )
+
+        set_time(
+            self.metricsPanel.adversarialTimeGsrLabel,
+            "adversarial_generation",
+            "gsr"
+        )
+
+
+        # ResNet-50 classification
+        set_time(
+            self.metricsPanel.resnetTimePgdLabel,
+            "resnet_classification",
+            "pgd"
+        )
+
+        set_time(
+            self.metricsPanel.resnetTimeGsrLabel,
+            "resnet_classification",
+            "gsr"
+        )
+
+
+        # LightShed
+        set_time(
+            self.metricsPanel.lightshedTimePgdLabel,
+            "lightshed_simulation",
+            "pgd"
+        )
+
+        set_time(
+            self.metricsPanel.lightshedTimeGsrLabel,
+            "lightshed_simulation",
+            "gsr"
+        )
+
+
+        # TruFor
+        set_time(
+            self.metricsPanel.truforTimePgdLabel,
+            "trufor_simulation",
+            "pgd"
+        )
+
+        set_time(
+            self.metricsPanel.truforTimeGsrLabel,
+            "trufor_simulation",
+            "gsr"
+        )
+
+        # PERTURBATION TENSORS
         gsr_pert = tensor_to_pixmap(self.results["gsr_perturbation"])
         pgd_pert = tensor_to_pixmap(self.results["pgd_perturbation"])
 
