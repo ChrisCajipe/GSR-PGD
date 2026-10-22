@@ -71,35 +71,56 @@ def generate_attacks(
     attack=ATTACK,
     tuning_size=TUNING_SIZE,
     seed=SPLIT_SEED,
-    total_images=TOTAL_IMAGES
-    ):
+    total_images=TOTAL_IMAGES,
+
+    # Optional settings for supplementary datasets
+    create_split=True,
+    original_dir=ORIGINAL_DIR,
+    adv_dir=ADV_DIR,
+    splits_file=SPLITS_FILE,
+):
 
     model = load_resnet()
-    dataset = list(dataset)  # needed so indices from split_dataset are usable
+    dataset = list(dataset)
 
-    dataset = dataset[:total_images]
+    # Limit dataset only when requested
+    if total_images is not None:
+        dataset = dataset[:total_images]
 
-    tuning_indices, evaluation_indices = split_dataset(
-        dataset,
-        tuning_size=tuning_size,
-        seed=seed,
-    )
 
-    tuning_ids = [
-        dataset[i]["image_id"]
-        for i in tuning_indices
-    ]
+    # ==========================================================
+    # OPTIONAL TUNING / EVALUATION SPLIT
+    # ==========================================================
 
-    evaluation_ids = [
-        dataset[i]["image_id"]
-        for i in evaluation_indices
-    ]
+    if create_split:
 
-    save_split_ids(
-        tuning_ids,
-        evaluation_ids,
-        SPLITS_FILE,
-    )
+        tuning_indices, evaluation_indices = split_dataset(
+            dataset,
+            tuning_size=tuning_size,
+            seed=seed,
+        )
+
+        tuning_ids = [
+            dataset[i]["image_id"]
+            for i in tuning_indices
+        ]
+
+        evaluation_ids = [
+            dataset[i]["image_id"]
+            for i in evaluation_indices
+        ]
+
+        save_split_ids(
+            tuning_ids,
+            evaluation_ids,
+            splits_file,
+        )
+
+    else:
+        print(
+            f"Dataset splitting disabled. "
+            f"Using all {len(dataset)} images."
+        )
 
 
     count = 0
@@ -165,8 +186,25 @@ def generate_attacks(
         total_attack_time_ms += elapsed_time_ms
 
         # SAVE IMAGE
-        save_image(image, ORIGINAL_DIR / f"{sample['image_id']}_original.png")
-        save_image(adv_image, ADV_DIR / f"{sample['image_id']}_adv.png")
+        original_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        adv_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        save_image(
+            image,
+            original_dir / f"{sample['image_id']}_original.png"
+        )
+
+        save_image(
+            adv_image,
+            adv_dir / f"{sample['image_id']}_adv.png"
+        )
 
         count += 1
 

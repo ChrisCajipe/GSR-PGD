@@ -1,5 +1,5 @@
 # Third-party repositories
-CAT-Net/
+
 lightshade-artifact/
 lightshade-artifact/.ipynb_checkpoints/README-checkpoint.md
 lightshade-artifact/.ipynb_checkpoints/requirements-checkpoint.txt
@@ -50,6 +50,16 @@ lightshade-artifact/README.md
 
 TruFor-main/
 
+# Dataset
+dataset/verified_dogs/
+dataset/celeba_poc/
+dataset/imagenet_poc/
+dataset/wikiart_poc/
+
+# Prototype
+gsr_pgd_gui/prototype_results/
+gsr_pgd_gui/demonstration_samples
+
 # Python
 __pycache__/
 *.pyc
@@ -57,12 +67,10 @@ __pycache__/
 
 # Virtual environments
 venv/
-catnet_env/
 lightshed_env/
 
 # Results
 results/
-dataset/verified_dogs/
 tuning/results/
 gsr_pgd_gui/prototype_results/
 
